@@ -1,9 +1,0 @@
-D:\Dev\TestProject-master\TestProject\Intermediate\Build\Win64\UE4Editor\Development\TestProject\Definitions.TestProject.h
-C:\Program Files\Epic Games\UE_4.24\Engine\Source\Runtime\CoreUObject\Public\UObject/GeneratedCppIncludes.h
-C:\Program Files\Epic Games\UE_4.24\Engine\Source\Runtime\CoreUObject\Public\UObject/MetaData.h
-D:\Dev\TestProject-master\TestProject\Source\TestProject/TestProjectGameModeBase.h
-C:\Program Files\Epic Games\UE_4.24\Engine\Source\Runtime\Engine\Classes\GameFramework/GameModeBase.h
-C:\Program Files\Epic Games\UE_4.24\Engine\Source\Runtime\Engine\Classes\Engine/ServerStatReplicator.h
-C:\Program Files\Epic Games\UE_4.24\Engine\Intermediate\Build\Win64\UE4Editor\Inc\Engine\ServerStatReplicator.generated.h
-C:\Program Files\Epic Games\UE_4.24\Engine\Intermediate\Build\Win64\UE4Editor\Inc\Engine\GameModeBase.generated.h
-D:\Dev\TestProject-master\TestProject\Intermediate\Build\Win64\UE4Editor\Inc\TestProject\TestProjectGameModeBase.generated.h

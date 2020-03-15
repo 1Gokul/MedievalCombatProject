@@ -75,3 +75,7 @@ DerivedDataCache/*
 
 TestProject/Content/StarterContent/
 
+
+TestProject/Intermediate/
+
+TestProject/Binaries/
