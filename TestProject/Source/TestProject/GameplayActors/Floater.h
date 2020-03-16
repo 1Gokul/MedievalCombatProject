@@ -18,6 +18,26 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Actor Mesh Components")
 		UStaticMeshComponent* StaticMesh = nullptr;
 
+	//Vector Location where the Floater will be placed when the game starts
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "FloaterVariables")
+		FVector InitialLocation = FVector(0.0f, 0.0f, 0.0f);
+
+	//Location of the floater when it was dragged into the editor
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "FloaterVariables")
+		FVector PlacedLocation;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "FloaterVariables")
+		FVector WorldOrigin;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FloaterVariables")
+		FVector InitialDirection;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FloaterVariables")
+		bool bShouldFloat;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FloaterVariables")
+		bool bInitializeFloaterLocation;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
