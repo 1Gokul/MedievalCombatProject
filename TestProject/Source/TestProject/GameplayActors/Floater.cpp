@@ -18,6 +18,12 @@ AFloater::AFloater()
 
 	bInitializeFloaterLocation = false;
 	bShouldFloat = false;
+
+	RunningTime = 0.0f;
+
+	Amplitude = 1.0f;
+	TimePeriod = 1.0f;
+	StartingPosition = 1.0f;
 }
 
 // Called when the game starts or when spawned
@@ -40,8 +46,14 @@ void AFloater::Tick(float DeltaTime)
 
 	if (bShouldFloat) {
 
-		FHitResult HitResult;
-		AddActorLocalOffset(InitialDirection, false, &HitResult);
+		FVector NewLocation = GetActorLocation();
+
+		NewLocation.Z = NewLocation.Z + Amplitude * FMath::Sin(TimePeriod * RunningTime) + StartingPosition;
+		//NewLocation.Y = NewLocation.Z + Amplitude * FMath::Cos(TimePeriod * RunningTime) + StartingPosition;
+
+		SetActorLocation(NewLocation);
+
+		RunningTime += DeltaTime;
 	}
 
 }
