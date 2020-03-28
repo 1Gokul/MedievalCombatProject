@@ -4,6 +4,10 @@
 #include "Collider.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/InputComponent.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "ColliderMovementComponent.h"
 
 // Sets default values
 ACollider::ACollider()
@@ -26,6 +30,20 @@ ACollider::ACollider()
 	MeshComponent->SetRelativeLocation(FVector(0.0f, 0.0f, -40.0f));
 	MeshComponent->SetWorldScale3D(FVector(0.8f, 0.8f, 0.8f));
 
+	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
+	SpringArmComponent->SetupAttachment(GetRootComponent());
+	SpringArmComponent->RelativeRotation = FRotator(-45.0f, 0.0f, 0.0f);
+	SpringArmComponent->TargetArmLength = 400.0f;
+	SpringArmComponent->bEnableCameraLag = true;
+	SpringArmComponent->CameraLagSpeed = 3.0f;
+
+	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
+	CameraComponent->SetupAttachment(SpringArmComponent, USpringArmComponent::SocketName);
+
+	OurMovementComponent = CreateDefaultSubobject<UColliderMovementComponent>(TEXT("MovementComponent"));
+	OurMovementComponent->UpdatedComponent = RootComponent;
+
+	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
 // Called when the game starts or when spawned
@@ -47,5 +65,32 @@ void ACollider::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	PlayerInputComponent->BindAxis(TEXT("MoveForward"), this, &ACollider::MoveForward);
+	PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &ACollider::MoveRight);
+
+}
+
+UPawnMovementComponent* ACollider::GetMovementComponent() const
+{
+	return OurMovementComponent;
+}
+
+void ACollider::MoveForward(float Value)
+{
+	FVector Forward = GetActorForwardVector();
+
+	if (OurMovementComponent) {
+		OurMovementComponent->AddInputVector(Forward * Value, false);
+	}
+
+}
+
+void ACollider::MoveRight(float Value)
+{
+	FVector Right = GetActorRightVector();
+
+	if (OurMovementComponent) {
+		OurMovementComponent->AddInputVector(Right * Value, false);
+	}
 }
 
