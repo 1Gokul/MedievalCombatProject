@@ -7,6 +7,8 @@
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 AMain::AMain()
@@ -20,6 +22,9 @@ AMain::AMain()
 	CameraBoom->TargetArmLength = 600.0f;	//Camera follows at this distance
 	CameraBoom->bUsePawnControlRotation = true;		//Rotate arm based on controller
 
+	//Set size of collision capsule
+	GetCapsuleComponent()->SetCapsuleSize(36.0f, 92.0f);
+
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);	//Attach camera to end of spring arm 
 	FollowCamera->bUsePawnControlRotation = false;	//Will stay fixed to CameraBoom and will not rotate
@@ -27,6 +32,18 @@ AMain::AMain()
 	//Set out turn rates for input
 	BaseTurnRate = 65.0f;
 	BaseLookUpRate = 65.0f;
+
+	//To make sure the player doesn't rotate when the controller rotates and only the camera does.
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
+
+
+	//Configure character movement
+	GetCharacterMovement()->bOrientRotationToMovement = true; //Character rotates to direction of input.
+	GetCharacterMovement()->RotationRate = FRotator(0.0, 1000.0f, 0.0f);
+	GetCharacterMovement()->JumpZVelocity = 650.0f;
+	GetCharacterMovement()->AirControl = 0.20f;
 }
 
 // Called when the game starts or when spawned
