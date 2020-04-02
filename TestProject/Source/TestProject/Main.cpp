@@ -4,6 +4,9 @@
 #include "Main.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
 
 // Sets default values
 AMain::AMain()
@@ -45,12 +48,25 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+
+
+	PlayerInputComponent->BindAxis("MoveForward", this, &AMain::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &AMain::MoveRight);
+
+
+	PlayerInputComponent->BindAxis("Turn", this, &AMain::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("LookUp", this, &AMain::AddControllerPitchInput);
+	PlayerInputComponent->BindAxis("TurnRate", this, &AMain::TurnAtRate);
+	PlayerInputComponent->BindAxis("LookUpRate", this, &AMain::LookUpAtRate);
+
 }
 
 void AMain::MoveForward(float Value)
 {
 	if ((Controller != nullptr) && (Value != 0.0f)) {
-		const FRotator Rotation = Controller->GetControlledRotation();
+		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
@@ -61,11 +77,21 @@ void AMain::MoveForward(float Value)
 void AMain::MoveRight(float Value)
 {
 	if ((Controller != nullptr) && (Value != 0.0f)) {
-		const FRotator Rotation = Controller->GetControlledRotation();
+		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		AddMovementInput(Direction, Value);
 	}
+}
+
+void AMain::TurnAtRate(float Rate)
+{
+	AddControllerYawInput(Rate * BaseTurnRate * (GetWorld()->GetDeltaSeconds()));
+}
+
+void AMain::LookUpAtRate(float Rate)
+{
+	AddControllerPitchInput(Rate * BaseLookUpRate * (GetWorld()->GetDeltaSeconds()));
 }
 

@@ -42,7 +42,25 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	void MoveForward(float Value);	//front and backward input
-	void MoveRight(float Value);	//Side to side input
+	/** Called for front and back movement*/
+	void MoveForward(float Value);
+
+	/**Called for left and right movement*/
+	void MoveRight(float Value);	
+
+	/**Called via input to turn at a given rate
+	* @param Rate This is normalized, i.e. 1.0 means 100% of desired turn rate
+	*/
+	void TurnAtRate(float Rate);
+
+	/**Called via input to look up/down at a given rate
+	* @param Rate This is normalized, i.e. 1.0 means 100% of desired look up/down rate
+	*/
+	void LookUpAtRate(float Rate);
+
+	//getters
+
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
 };

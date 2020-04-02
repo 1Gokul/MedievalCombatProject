@@ -44,10 +44,10 @@ public:
 	//getters
 
 	virtual UPawnMovementComponent* GetMovementComponent() const override;
-	FORCEINLINE UStaticMeshComponent* GetMeshComponent() { return MeshComponent; }
-	FORCEINLINE USphereComponent* GetSphereComponent() { return SphereComponent; }
-	FORCEINLINE UCameraComponent* GetCameraComponent() { return CameraComponent; }
-	FORCEINLINE USpringArmComponent* GetSpringArmComponent() { return SpringArmComponent; }
+	FORCEINLINE UStaticMeshComponent* GetMeshComponent() const { return MeshComponent; }
+	FORCEINLINE USphereComponent* GetSphereComponent() const { return SphereComponent; }
+	FORCEINLINE UCameraComponent* GetCameraComponent() const { return CameraComponent; }
+	FORCEINLINE USpringArmComponent* GetSpringArmComponent() const { return SpringArmComponent; }
 
 
 
