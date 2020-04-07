@@ -34,6 +34,15 @@ public:
 	/** Initial Location of Floor Switch*/
 	UPROPERTY(BlueprintReadWrite, Category = FloorSwitch)
 		FVector InitialSwitchLocation;
+
+	FTimerHandle SwitchHandle;
+
+	/**Time delay before the door closes after the player leaves the floor switch*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = FloorSwitch)
+		float SwitchTime;
+
+	bool bCharacterOnSwitch;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -67,4 +76,5 @@ public:
 	UFUNCTION(BlueprintCallable, Category = FloorSwitch)
 		void UpdateFloorSwitchLocation(float Z);
 
+	void CloseDoor();
 };

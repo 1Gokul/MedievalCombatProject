@@ -4,6 +4,8 @@
 #include "FloorSwitch.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "TimerManager.h"
+
 
 // Sets default values
 AFloorSwitch::AFloorSwitch()
@@ -21,12 +23,16 @@ AFloorSwitch::AFloorSwitch()
 	TriggerBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
 	TriggerBox->SetBoxExtent(FVector(62.0f, 52.0f, 32.0f));
+	
 
 	FloorSwitch = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FloorSwitch"));
 	FloorSwitch->SetupAttachment(GetRootComponent());
 
 	Door = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Door"));
 	Door->SetupAttachment(GetRootComponent());
+
+	SwitchTime = 3.0f;
+	bCharacterOnSwitch = false;
 }
 
 // Called when the game starts or when spawned
@@ -37,6 +43,7 @@ void AFloorSwitch::BeginPlay()
 	TriggerBox->OnComponentEndOverlap.AddDynamic(this, &AFloorSwitch::OnOverlapEnd);
 
 	InitialDoorLocation = Door->GetComponentLocation();
+	UE_LOG(LogTemp, Warning, TEXT("Initial Door Location- (%f, %f, %f)"), InitialDoorLocation.X, InitialDoorLocation.Y, InitialDoorLocation.Z);
 	InitialSwitchLocation = FloorSwitch->GetComponentLocation();
 }
 
@@ -50,6 +57,9 @@ void AFloorSwitch::Tick(float DeltaTime)
 void AFloorSwitch::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Overlap Begin!"));
+	
+	if (!bCharacterOnSwitch)bCharacterOnSwitch = true;
+
 	RaiseDoor();
 	LowerFloorSwitch();
 }
@@ -57,14 +67,16 @@ void AFloorSwitch::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 void AFloorSwitch::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Overlap End!"));
-	LowerDoor();
-	RaiseFloorSwitch();
+
+	if (bCharacterOnSwitch)bCharacterOnSwitch = false;
+
+	GetWorldTimerManager().SetTimer(SwitchHandle, this, &AFloorSwitch::CloseDoor, SwitchTime);
 }
 
 void AFloorSwitch::UpdateDoorLocation(float Z)
 {
 	FVector NewLocation = InitialDoorLocation;
-	NewLocation.Z = Z;
+	NewLocation.Z += Z;
 
 	Door->SetWorldLocation(NewLocation);
 }
@@ -72,7 +84,19 @@ void AFloorSwitch::UpdateDoorLocation(float Z)
 void AFloorSwitch::UpdateFloorSwitchLocation(float Z)
 {
 	FVector NewLocation = InitialSwitchLocation;
-	NewLocation.Z = Z;
+	NewLocation.Z += Z;
 
 	FloorSwitch->SetWorldLocation(NewLocation);
+}
+
+
+void AFloorSwitch::CloseDoor()
+{
+
+	if (!bCharacterOnSwitch) {
+		LowerDoor();
+		RaiseFloorSwitch();
+	}
+
+	
 }
