@@ -29,9 +29,11 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	//Get a random point in the Spawn Volume to spawn the Critter
 	UFUNCTION(BlueprintPure, Category = Spawning)
 		FVector GetSpawnPoint();
 
+	//Spawn the pawn (in this case, Critter)
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = Spawning)
 		void SpawnOurPawn(UClass* ToSpawn, const FVector& Location);
 };

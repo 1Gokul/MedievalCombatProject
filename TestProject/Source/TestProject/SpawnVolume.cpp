@@ -33,15 +33,16 @@ void ASpawnVolume::Tick(float DeltaTime)
 
 FVector ASpawnVolume::GetSpawnPoint()
 {
-	FVector Extent = SpawningBox->GetScaledBoxExtent();
-	FVector Origin = SpawningBox->GetComponentLocation();
+	FVector Extent = SpawningBox->GetScaledBoxExtent();		//Size of Spawning box
+	FVector Origin = SpawningBox->GetComponentLocation();	//Position of Spawning Box
 
 	return UKismetMathLibrary::RandomPointInBoundingBox(Origin, Extent);
 }
 
 void ASpawnVolume::SpawnOurPawn_Implementation(UClass* ToSpawn, const FVector& Location)
 {
-	if (ToSpawn) {
+	
+	if (ToSpawn) {	
 
 		UWorld* World = GetWorld();
 		FActorSpawnParameters SpawnParams;
