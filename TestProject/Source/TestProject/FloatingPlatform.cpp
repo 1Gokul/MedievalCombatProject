@@ -54,6 +54,8 @@ void AFloatingPlatform::Tick(float DeltaTime)
 		float DistanceTraveled = (GetActorLocation() - StartPoint).Size();
 
 		if (Distance - DistanceTraveled <= 1.0f) {
+
+			ToggleInterping();
 			GetWorldTimerManager().SetTimer(InterpTimer, this, &AFloatingPlatform::ToggleInterping, InterpTime);
 			SwapVectors(StartPoint, EndPoint);
 		}

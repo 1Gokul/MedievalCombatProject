@@ -56,7 +56,7 @@ void AFloorSwitch::Tick(float DeltaTime)
 
 void AFloorSwitch::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Overlap Begin!"));
+	UE_LOG(LogTemp, Warning, TEXT("FloorSwitch Overlap has begun!"));
 	
 	if (!bCharacterOnSwitch)bCharacterOnSwitch = true;
 
@@ -66,7 +66,7 @@ void AFloorSwitch::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 
 void AFloorSwitch::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Overlap End!"));
+	UE_LOG(LogTemp, Warning, TEXT("FloorSwitch Overlap has ended!"));
 
 	if (bCharacterOnSwitch)bCharacterOnSwitch = false;
 
