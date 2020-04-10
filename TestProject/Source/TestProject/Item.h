@@ -23,14 +23,25 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Mesh")
 	class UStaticMeshComponent* Mesh;
 
+	/** Particle Component when the item is idle and has not been picked up */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
 	class UParticleSystemComponent* IdleParticlesComponent;
 
+	/** Particle System that is emitted when the player overlaps with the item */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
 	class UParticleSystem* OverlapParticles;
 
+	/** Sound emitted when overlap occurs*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Sounds")
 	class USoundCue* OverlapSound;
+
+	/** Bool to check if the item should rotate when idle or not */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | ItemProperties")
+	bool bShouldRotate;
+
+	/** Rate at which the item will rotate if bShouldRotate = true */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | ItemProperties")
+	float RotationRate;
 
 protected:
 	// Called when the game starts or when spawned
