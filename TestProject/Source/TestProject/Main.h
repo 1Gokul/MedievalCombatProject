@@ -30,6 +30,26 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 		float BaseLookUpRate;
 
+	/**
+	*
+	*	Player Stats
+	*
+	*/
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats")
+	float MaxHealth;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Stats")
+	float Health;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats")
+	float MaxStamina;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Stats")
+	float Stamina;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Stats")
+	int32 Coins;
 
 protected:
 	// Called when the game starts or when spawned
@@ -48,12 +68,12 @@ public:
 	/**Called for left and right movement*/
 	void MoveRight(float Value);	
 
-	/**Called via input to turn at a given rate
+	/** Called via input to turn at a given rate
 	* @param Rate This is normalized, i.e. 1.0 means 100% of desired turn rate
 	*/
 	void TurnAtRate(float Rate);
 
-	/**Called via input to look up/down at a given rate
+	/** Called via input to turn up/down at a given rate
 	* @param Rate This is normalized, i.e. 1.0 means 100% of desired look up/down rate
 	*/
 	void LookUpAtRate(float Rate);
