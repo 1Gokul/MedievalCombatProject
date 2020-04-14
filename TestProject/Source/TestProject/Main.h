@@ -6,6 +6,26 @@
 #include "GameFramework/Character.h"
 #include "Main.generated.h"
 
+UENUM(BlueprintType)
+enum class EMovementStatus : uint8
+{
+	EMS_Normal UMETA(DisplayName = "Normal"),
+	EMS_Sprinting UMETA(DisplayName = "Sprinting"),
+
+	EMS_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
+UENUM(BlueprintType)
+enum class EStaminaStatus : uint8
+{
+	ESS_Normal UMETA(DisplayName = "Normal"),
+	ESS_BelowMinimum UMETA(DisplayName = "BelowMinimum"),
+	ESS_Exhausted UMETA(DisplayName = "Exhausted"),
+	ESS_ExhaustedRecovering UMETA(DisplayName = "ExhaustedRecovering"),
+
+	ESS_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 UCLASS()
 class TESTPROJECT_API AMain : public ACharacter
 {
@@ -14,6 +34,29 @@ class TESTPROJECT_API AMain : public ACharacter
 public:
 	// Sets default values for this character's properties
 	AMain();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
+	class AWeapon* EquippedWeapon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
+	EMovementStatus MovementStatus;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
+	EStaminaStatus StaminaStatus;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float StaminaDrainRate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float MinSprintStamina;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	float RunningSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	float SprintingSpeed;
+
+	bool bShiftKeyDown;
 
 	/**Camera boom positioning the camera behind the player. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -83,4 +126,29 @@ public:
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
+	//setters
+
+	/** Set movement status and running speed */
+	void SetMovementStatus(EMovementStatus Status);
+
+	/** Set stamina status */
+	FORCEINLINE void SetStaminaStatus(EStaminaStatus Status) { StaminaStatus = Status; }
+
+	FORCEINLINE void SetEquippedWeapon(AWeapon* WeaponToSet) { EquippedWeapon = WeaponToSet; }
+
+
+	/** Called to decrease health of player if they take damage */
+	void DecrementHealth(float Amount);
+
+	/** Called if health of player becomes lesss than equal to zero */
+	void Die();
+
+	/** Called to increment coin count of player if they pick up a coin/coins */
+	void IncrementCoins(int32 Amount);	
+
+	/** Pressed down to enable sprinting*/
+	void ShiftKeyDown();
+
+	/** Released to stop sprinting*/
+	void ShiftKeyUp();
 };

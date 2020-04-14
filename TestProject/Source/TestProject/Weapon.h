@@ -4,22 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "Item.h"
-#include "Pickup.generated.h"
+#include "Weapon.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class TESTPROJECT_API APickup : public AItem
+class TESTPROJECT_API AWeapon : public AItem
 {
 	GENERATED_BODY()
 
 public:
 
-	APickup();
+	AWeapon();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Coins")
-	int32 CoinCount;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skeletal Mesh")
+	class USkeletalMeshComponent* SkeletalMesh;
 
 	/**Called if an Overlap Event starts. */
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
@@ -27,5 +28,6 @@ public:
 	/** Called when the Overlap Event ends */
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
 
+	void Equip(class AMain* Char);
 	
 };

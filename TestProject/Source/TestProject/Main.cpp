@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 // Sets default values
 AMain::AMain()
@@ -50,6 +51,17 @@ AMain::AMain()
 	MaxStamina = 150.0f;
 	Stamina = 120.0f;
 	Coins = 0;
+
+	RunningSpeed = 650.0f;
+	SprintingSpeed = 950.0f;
+
+	bShiftKeyDown = false;
+
+	MovementStatus = EMovementStatus::EMS_Normal;
+	StaminaStatus = EStaminaStatus::ESS_Normal;
+
+	StaminaDrainRate = 25.0f;
+	MinSprintStamina = 50.0f;
 }
 
 // Called when the game starts or when spawned
@@ -57,6 +69,7 @@ void AMain::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	//UKismetSystemLibrary::DrawDebugSphere(this, GetActorLocation() + FVector(0, 0, 75.0f), 50.0f, 12, FLinearColor::Red, 5.0f, 1.0f);
 }
 
 // Called every frame
@@ -64,6 +77,86 @@ void AMain::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	float DeltaStamina = StaminaDrainRate * DeltaTime;
+
+	switch (StaminaStatus) {
+
+	case EStaminaStatus::ESS_Normal:
+
+		if (bShiftKeyDown) {
+
+			if (Stamina - DeltaStamina <= MinSprintStamina) {
+				SetStaminaStatus(EStaminaStatus::ESS_BelowMinimum);
+				Stamina -= DeltaStamina;
+			}
+			else {
+				Stamina -= DeltaStamina;
+			}
+			SetMovementStatus(EMovementStatus::EMS_Sprinting);
+		}
+		else {
+			if (Stamina + DeltaStamina >= MaxStamina) {
+				Stamina = MaxStamina;
+			}
+			else {
+				Stamina += DeltaStamina;
+			}
+			SetMovementStatus(EMovementStatus::EMS_Normal);
+		}
+		break;
+
+	case EStaminaStatus::ESS_BelowMinimum:
+
+		if (bShiftKeyDown) {
+			if (Stamina - DeltaStamina <= 0.0f) {
+				SetStaminaStatus(EStaminaStatus::ESS_Exhausted);
+				Stamina = 0;
+				SetMovementStatus(EMovementStatus::EMS_Normal);
+			}
+			else {
+				Stamina -= DeltaStamina;
+				SetMovementStatus(EMovementStatus::EMS_Sprinting);
+			}
+		}
+		else {
+			if (Stamina + DeltaStamina >= MinSprintStamina) {
+				SetStaminaStatus(EStaminaStatus::ESS_Normal);
+				Stamina += DeltaStamina;
+			}
+			else {
+				Stamina += DeltaStamina;
+			}
+			SetMovementStatus(EMovementStatus::EMS_Normal);
+		}
+		break;
+
+	case EStaminaStatus::ESS_Exhausted:
+
+		if (bShiftKeyDown) {
+			Stamina = 0.0f;
+		}
+		else {
+			SetStaminaStatus(EStaminaStatus::ESS_ExhaustedRecovering);
+			Stamina += DeltaStamina;
+		}
+		SetMovementStatus(EMovementStatus::EMS_Normal);
+		break;
+
+	case EStaminaStatus::ESS_ExhaustedRecovering:
+
+		if (Stamina + DeltaStamina >= MinSprintStamina) {
+			SetStaminaStatus(EStaminaStatus::ESS_Normal);
+			Stamina += DeltaStamina;
+		}
+		else {
+			Stamina += DeltaStamina;
+		}
+		SetMovementStatus(EMovementStatus::EMS_Normal);
+		break;
+
+	default:
+		break;
+	}
 }
 
 // Called to bind functionality to input
@@ -74,6 +167,8 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMain::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMain::MoveRight);
@@ -116,5 +211,46 @@ void AMain::TurnAtRate(float Rate)
 void AMain::LookUpAtRate(float Rate)
 {
 	AddControllerPitchInput(Rate * BaseLookUpRate * (GetWorld()->GetDeltaSeconds()));
+}
+
+void AMain::DecrementHealth(float Amount)
+{
+	Health -= Amount;
+
+	if (Health <= 0.0f) {		
+		Die();
+	}
+	
+}
+
+void AMain::Die()
+{
+}
+
+void AMain::IncrementCoins(int32 Amount)
+{
+	Coins += Amount;
+}
+
+void AMain::SetMovementStatus(EMovementStatus Status)
+{
+	MovementStatus = Status;
+
+	if (MovementStatus == EMovementStatus::EMS_Sprinting) {
+		GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
+	}
+	else {
+		GetCharacterMovement()->MaxWalkSpeed = RunningSpeed;
+	}
+}
+
+void AMain::ShiftKeyDown()
+{
+	bShiftKeyDown = true;
+}
+
+void AMain::ShiftKeyUp()
+{
+	bShiftKeyDown = false;
 }
 
