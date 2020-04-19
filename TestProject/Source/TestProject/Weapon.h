@@ -6,6 +6,14 @@
 #include "Item.h"
 #include "Weapon.generated.h"
 
+UENUM(BlueprintType)
+enum class EWeaponState : uint8 {
+	EWS_Pickup		UMETA(DisplayName = "Pickup"),
+	EWS_Equipped	UMETA(DisplayName = "Equipped"),
+
+	EWS_MAX			UMETA(DisplayName = "DefaultMAX")
+};
+  
 /**
  * 
  */
@@ -18,6 +26,15 @@ public:
 
 	AWeapon();
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
+	EWeaponState WeaponState; 
+
+	/** To choose if the weapon's particle effects should show even after equipping */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Particles")
+		bool bWeaponParticles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Sound")
+		class USoundCue* OnEquipSound;	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skeletal Mesh")
 	class USkeletalMeshComponent* SkeletalMesh;
@@ -30,4 +47,6 @@ public:
 
 	void Equip(class AMain* Char);
 	
+	FORCEINLINE void SetWeaponState(EWeaponState State) { WeaponState = State; }
+	FORCEINLINE EWeaponState GetWeaponState() { return WeaponState; }
 };
