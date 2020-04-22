@@ -85,6 +85,13 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 		class UAnimMontage* CombatMontage;
 
+	/** Particles emitted when the player gets hit */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+		class UParticleSystem* HitParticles;
+
+	/** Sound that gets emitted when the player gets hit */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat ")
+		class USoundCue* HitSound;
 
 	/**
 	*
@@ -175,4 +182,7 @@ public:
 
 	/** Released to stop sprinting*/
 	void ShiftKeyUp();
+
+	UFUNCTION(BlueprintCallable)
+	void PlaySwingSound();
 };

@@ -14,6 +14,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimInstance.h"
+#include "Sound/SoundCue.h"
 
 // Sets default values
 AMain::AMain()
@@ -278,6 +279,7 @@ void AMain::Attack()
 		}
 
 	}
+	
 }
 
 void AMain::AttackEnd()
@@ -337,5 +339,12 @@ void AMain::ShiftKeyDown()
 void AMain::ShiftKeyUp()
 {
 	bShiftKeyDown = false;
+}
+
+void AMain::PlaySwingSound()
+{
+	if (EquippedWeapon->SwingSound) {
+		UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSound);
+	}
 }
 

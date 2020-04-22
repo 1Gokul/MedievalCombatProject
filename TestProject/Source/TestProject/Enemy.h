@@ -47,6 +47,35 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 		AMain* CombatTarget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	float Health;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	float MaxHealth;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	float Damage;
+
+	/** Particles emitted when the enemy gets hit */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	class UParticleSystem* HitParticles;
+
+	/** Sound that gets emitted when the enemy gets hit */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI ")
+	class USoundCue* HitSound;
+
+	/** Sound that gets emitted when the enemy swings at the player */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI ")
+	USoundCue* SwingSound;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+	class UBoxComponent* CombatCollision;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+		class UAnimMontage* CombatMontage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	bool bAttacking;
 
 protected:
 	// Called when the game starts or when spawned
@@ -79,4 +108,23 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void MoveToTarget(class AMain* Main);
+
+	/**Called if a Combat Overlap Event starts. */
+	UFUNCTION()
+		void CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	/** Called when the Combat Overlap Event ends. */
+	UFUNCTION()
+		void CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	UFUNCTION(BlueprintCallable)
+		void ActivateCollision();
+
+	UFUNCTION(BlueprintCallable)
+		void DeactivateCollision();
+
+	void Attack();
+
+	UFUNCTION(BlueprintCallable)
+		void AttackEnd();
 };
