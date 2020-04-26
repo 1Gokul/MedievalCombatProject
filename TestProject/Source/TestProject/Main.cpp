@@ -10,11 +10,13 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Weapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimInstance.h"
 #include "Sound/SoundCue.h"
+#include "Enemy.h"
 
 // Sets default values
 AMain::AMain()
@@ -69,6 +71,9 @@ AMain::AMain()
 
 	StaminaDrainRate = 25.0f;
 	MinSprintStamina = 50.0f;
+
+	InterpSpeed = 15.0f;
+	bInterpToEnemy = false;
 }
 
 // Called when the game starts or when spawned
@@ -164,6 +169,13 @@ void AMain::Tick(float DeltaTime)
 	default:
 		break;
 	}
+
+	if (bInterpToEnemy && CombatTarget) {
+		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
+		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
+
+		SetActorRotation(InterpRotation);
+	}
 }
 
 // Called to bind functionality to input
@@ -176,7 +188,7 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &AMain::LMBDown);
 	PlayerInputComponent->BindAction("LMB", IE_Released, this, &AMain::LMBUp);
-
+	
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
 
@@ -252,6 +264,7 @@ void AMain::Attack()
 {
 	if (!bAttacking) {
 		bAttacking = true;
+		SetInterpToEnemy(true);
 
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -285,6 +298,7 @@ void AMain::Attack()
 void AMain::AttackEnd()
 {
 	bAttacking = false;
+	SetInterpToEnemy(false);
 
 	if (bLMBDown) {
 		Attack();
@@ -303,11 +317,23 @@ void AMain::DecrementHealth(float Amount)
 
 void AMain::Die()
 {
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && CombatMontage) {
+		AnimInstance->Montage_Play(CombatMontage, 1.0f);
+		AnimInstance->Montage_JumpToSection(FName("Death"));
+	}
 }
 
 void AMain::IncrementCoins(int32 Amount)
 {
 	Coins += Amount;
+}
+
+FRotator AMain::GetLookAtRotationYaw(FVector Target)
+{
+	FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target);
+	FRotator LookAtRotationYaw(0.0f, LookAtRotation.Yaw, 0.0f);
+	return LookAtRotationYaw;
 }
 
 void AMain::SetMovementStatus(EMovementStatus Status)
@@ -348,3 +374,13 @@ void AMain::PlaySwingSound()
 	}
 }
 
+void AMain::SetInterpToEnemy(bool Interp) {
+
+	bInterpToEnemy = Interp;
+}
+
+float AMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	DecrementHealth(DamageAmount);
+	return DamageAmount;
+}

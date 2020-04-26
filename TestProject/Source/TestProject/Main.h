@@ -114,6 +114,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Stats")
 	int32 Coins;
 
+	float InterpSpeed;
+
+	bool bInterpToEnemy;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	class AEnemy* CombatTarget;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -155,6 +162,10 @@ public:
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
+	/** Takes the location of the target and returns how 
+	*	much the player has to rotate to orient it to the target. */
+	FRotator GetLookAtRotationYaw(FVector Target);
+
 	//setters
 
 	/** Set movement status and running speed */
@@ -166,7 +177,7 @@ public:
 
 	FORCEINLINE void SetActiveOverlappingItem(AItem* ItemToSet) { ActiveOverlappingItem = ItemToSet; }
 
-
+	FORCEINLINE void SetCombatTarget(AEnemy* Target) { CombatTarget = Target; }
 
 	/** Called to decrease health of player if they take damage */
 	void DecrementHealth(float Amount);
@@ -185,4 +196,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void PlaySwingSound();
+
+	/** Set bInterpToEnemy
+	*	@param Interp true or false depending on proximity to the Enemy
+	*/
+	void SetInterpToEnemy(bool Interp);
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, 
+							class AController* EventInstigator, AActor* DamageCauser) override;
 };
