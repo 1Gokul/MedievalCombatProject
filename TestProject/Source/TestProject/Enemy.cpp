@@ -14,6 +14,7 @@
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
 #include "Components/CapsuleComponent.h"
+#include "MainPlayerController.h"
 
 // Sets default values
 AEnemy::AEnemy(){
@@ -97,13 +98,21 @@ void AEnemy::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, 
 void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor && Alive()) {
+
 		AMain* Main = Cast<AMain>(OtherActor);
 
 		if (Main) {
-			Main->SetCombatTarget(this); 
+
+			Main->SetCombatTarget(this);
+			Main->SetHasCombatTarget(true);
+			if (Main->MainPlayerController) {
+				Main->MainPlayerController->DisplayEnemyHealthBar();
+			}
+
 			CombatTarget = Main;
 			bOverlappingCombatSphere = true;
 			Attack();
+
 		}
 	}
 }
@@ -111,13 +120,23 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (OtherActor) {
+
 		AMain* Main = Cast<AMain>(OtherActor);
 
 		if (Main) {
+
+
+			if (Main->MainPlayerController) {
+				Main->MainPlayerController->RemoveEnemyHealthBar();
+			}
+
 			SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Idle);
+
 			if (AIController) {
+
 				AIController->StopMovement();
 				CombatTarget = nullptr;
+
 			}
 		}
 	}
@@ -126,17 +145,27 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (OtherActor) {
+
 		AMain* Main = Cast<AMain>(OtherActor);
 
 		if (Main) {
+
 			if (Main->CombatTarget == this) {
+
 				Main->SetCombatTarget(nullptr);
+				Main->SetHasCombatTarget(false);
+
 			}			
+
 			bOverlappingCombatSphere = false;
+
 			if (EnemyMovementStatus != EEnemyMovementStatus::EMS_Attacking) {
+
 				MoveToTarget(Main);
 				CombatTarget = nullptr;
+
 			}
+
 			GetWorldTimerManager().ClearTimer(AttackTimer);
 		}
 	}
