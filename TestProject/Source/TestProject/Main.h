@@ -9,10 +9,11 @@
 UENUM(BlueprintType)
 enum class EMovementStatus : uint8
 {
-	EMS_Normal UMETA(DisplayName = "Normal"),
-	EMS_Sprinting UMETA(DisplayName = "Sprinting"),
+	EMS_Normal		UMETA(DisplayName = "Normal"),
+	EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
+	EMS_Dead		UMETA(DisplayName = "Dead"),
 
-	EMS_MAX UMETA(DisplayName = "DefaultMAX")
+	EMS_MAX			UMETA(DisplayName = "DefaultMAX")
 };
 
 UENUM(BlueprintType)
@@ -216,4 +217,9 @@ public:
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, 
 							class AController* EventInstigator, AActor* DamageCauser) override;
+
+	UFUNCTION(BlueprintCallable)
+	void DeathEnd();
+
+	virtual void Jump() override;
 };

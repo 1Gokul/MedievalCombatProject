@@ -34,6 +34,7 @@ AEnemy::AEnemy(){
 
 	bOverlappingCombatSphere = false;
 	bAttacking = false;
+	bHasValidTarget = false;
 
 	Health = 75.0f;
 	MaxHealth = 100.0f;
@@ -103,6 +104,7 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 
 		if (Main) {
 
+			bHasValidTarget = true;
 			Main->SetCombatTarget(this);
 			Main->SetHasCombatTarget(true);
 			if (Main->MainPlayerController) {
@@ -125,7 +127,7 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 
 		if (Main) {
 
-
+			bHasValidTarget = false;
 			if (Main->MainPlayerController) {
 				Main->MainPlayerController->RemoveEnemyHealthBar();
 			}
@@ -242,7 +244,7 @@ void AEnemy::DeactivateCollision()
 
 void AEnemy::Attack()
 {
-	if (Alive()) {
+	if (Alive() && bHasValidTarget) {
 
 		if (AIController) {
 			AIController->StopMovement();

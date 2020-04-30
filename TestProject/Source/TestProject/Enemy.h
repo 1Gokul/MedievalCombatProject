@@ -78,6 +78,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bAttacking;
 
+	bool bHasValidTarget;
+
 	FTimerHandle AttackTimer;
 
 	FTimerHandle DeathTimer;
