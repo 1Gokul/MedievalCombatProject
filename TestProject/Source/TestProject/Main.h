@@ -69,6 +69,10 @@ public:
 
 	bool bShiftKeyDown;
 
+	bool bMovingForward;
+
+	bool bMovingRight;
+
 	/**Camera boom positioning the camera behind the player. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class USpringArmComponent* CameraBoom;
@@ -131,6 +135,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bHasCombatTarget;
+
+	/** TSubclass that specifies to GetOverlappingActors()
+	 *	to get overlapping actors of only type AEnemy. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat ")
+		TSubclassOf<AEnemy>EnemyFilter;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -222,4 +232,6 @@ public:
 	void DeathEnd();
 
 	virtual void Jump() override;
+
+	void UpdateCombatTarget();
 };
