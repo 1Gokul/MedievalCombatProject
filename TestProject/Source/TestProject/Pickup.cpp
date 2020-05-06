@@ -10,14 +10,14 @@
 
 APickup::APickup() 
 {
-	CoinCount = 1;
+
 }
 
 void APickup::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Super::OnOverlapBegin(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	UE_LOG(LogTemp, Warning, TEXT("Item-Pickup Overlap has begun!"));
+	//UE_LOG(LogTemp, Warning, TEXT("Item-Pickup Overlap has begun!"));
 
 
 	if (OtherActor) {
@@ -25,6 +25,8 @@ void APickup::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* O
 		AMain* Main = Cast<AMain>(OtherActor);
 
 		if (Main) {
+
+			OnPickupBP(Main);
 
 			if (OverlapParticles) {
 				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OverlapParticles, GetActorLocation(), FRotator(0.0f), true);
@@ -34,7 +36,6 @@ void APickup::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* O
 				UGameplayStatics::PlaySound2D(this, OverlapSound);
 			}
 
-			Main->IncrementCoins(CoinCount);
 			Destroy();
 		}
 	}
@@ -44,7 +45,7 @@ void APickup::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 {
 	Super::OnOverlapEnd(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 
-	UE_LOG(LogTemp, Warning, TEXT("Item-Pickup Overlap has ended!"));
+	//UE_LOG(LogTemp, Warning, TEXT("Item-Pickup Overlap has ended!"));
 
 
 }

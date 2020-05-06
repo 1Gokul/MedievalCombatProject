@@ -209,7 +209,12 @@ public:
 	void Die();
 
 	/** Called to increment coin count of player if they pick up a coin/coins */
+	UFUNCTION(BlueprintCallable)
 	void IncrementCoins(int32 Amount);	
+
+	/** Called to increase health of player if they take pick up a health potion */
+	UFUNCTION(BlueprintCallable)
+	void IncrementHealth(float Amount);
 
 	/** Pressed down to enable sprinting*/
 	void ShiftKeyDown();
