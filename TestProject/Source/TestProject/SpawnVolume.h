@@ -19,7 +19,18 @@ public:
 		class UBoxComponent* SpawningBox;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Spawning)
-		TSubclassOf<class ACritter> PawnToSpawn;
+	TSubclassOf<AActor> Actor_1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Spawning)
+	TSubclassOf<AActor> Actor_2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Spawning)
+	TSubclassOf<AActor> Actor_3;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Spawning)
+	TSubclassOf<AActor> Actor_4;
+
+	TArray<TSubclassOf<AActor>>SpawnArray; 
 
 protected:
 	// Called when the game starts or when spawned
@@ -29,11 +40,15 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	//Get a random point in the Spawn Volume to spawn the Critter
+	//Get a random point in the Spawn Volume to spawn the Actor
 	UFUNCTION(BlueprintPure, Category = Spawning)
 		FVector GetSpawnPoint();
 
-	//Spawn the pawn (in this case, Critter)
+	//Get a random Actor to spawn
+	UFUNCTION(BlueprintPure, Category = Spawning)
+		TSubclassOf<AActor> GetSpawnActor();
+
+	//Spawn the Actor
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = Spawning)
-		void SpawnOurPawn(UClass* ToSpawn, const FVector& Location);
+		void SpawnOurActor(UClass* ToSpawn, const FVector& Location);
 };
