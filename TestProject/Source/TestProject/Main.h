@@ -239,4 +239,6 @@ public:
 	virtual void Jump() override;
 
 	void UpdateCombatTarget();
+
+	void SwitchLevel(FName LevelName);
 };
