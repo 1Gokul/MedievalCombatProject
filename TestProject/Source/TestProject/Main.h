@@ -141,6 +141,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat ")
 		TSubclassOf<AEnemy>EnemyFilter;
 
+	UPROPERTY(EditDefaultsOnly, Category = "SavedData")
+		TSubclassOf<class AItemStorage> WeaponStorage;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -241,4 +243,10 @@ public:
 	void UpdateCombatTarget();
 
 	void SwitchLevel(FName LevelName);
+
+	UFUNCTION(BlueprintCallable)
+	void SaveGame();
+
+	UFUNCTION(BlueprintCallable)
+	void LoadGame(bool SetPosition);
 };
