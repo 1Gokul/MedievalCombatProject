@@ -13,6 +13,13 @@ UCLASS()
 class TESTPROJECT_API AMainPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+
+
+protected:
+
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	
 public:
 	
@@ -24,7 +31,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* HUDOverlay;
 
-	/** For Enemy */
+	/** For Enemy health bar */
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 		TSubclassOf<UUserWidget> WEnemyHealthBar;
@@ -38,9 +45,23 @@ public:
 
 	void DisplayEnemyHealthBar();
 	void RemoveEnemyHealthBar();
-protected:
 
-	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
+	/** Pause Menu*/
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+		TSubclassOf<UUserWidget> WPauseMenu;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+		UUserWidget* PauseMenu;
+
+	bool bPauseMenuVisible;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void DisplayPauseMenu();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void RemovePauseMenu();
+
+	void TogglePauseMenu();
 
 };

@@ -91,6 +91,9 @@ public:
 	/** LMB: Left Mouse Button*/
 	bool bLMBDown;
 
+	/** ESC: Escape Button*/
+	bool bESCDown;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 		bool bAttacking;
 
@@ -173,6 +176,10 @@ public:
 	/** LMB: Left Mouse Button*/
 	void LMBUp();
 	void LMBDown();
+
+	/** ESC: Escape Button*/
+	void ESCUp();
+	void ESCDown();
 
 	void Attack();
 
