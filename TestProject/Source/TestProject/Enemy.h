@@ -69,8 +69,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	USoundCue* SwingSound;
 
+	/** Collision Box attached to the left hand's weapon to generate overlap events 
+	*	if the weapon comes in contact with the Player during an attack. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-	class UBoxComponent* CombatCollision;
+	class UBoxComponent* LeftCombatCollision;
+
+	/** Collision Box attached to the right hand's weapon to generate overlap events
+	*	if the weapon comes in contact with the Player during an attack. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
+	class UBoxComponent* RightCombatCollision;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 		class UAnimMontage* CombatMontage;
@@ -95,6 +102,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 		TSubclassOf<UDamageType> DamageTypeClass;
+
+	/** Socket names based on Attack Names*/
+
+	FName CurrentAttackTipSocket;
+	FName Attack1_TipSocket;
+	FName Attack2_TipSocket;
 
 protected:
 	// Called when the game starts or when spawned

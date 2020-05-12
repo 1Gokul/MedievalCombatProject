@@ -29,8 +29,11 @@ AEnemy::AEnemy(){
 	CombatSphere->SetupAttachment(GetRootComponent());
 	CombatSphere->InitSphereRadius(75.0f);
 
-	CombatCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("CombatCollision"));
-	CombatCollision->SetupAttachment(GetMesh(), FName("EnemySocket"));
+	LeftCombatCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("LeftCombatCollision"));
+	LeftCombatCollision->SetupAttachment(GetMesh(), FName("LeftEnemySocket"));
+
+	RightCombatCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("RightCombatCollision"));
+	RightCombatCollision->SetupAttachment(GetMesh(), FName("RightEnemySocket"));
 
 	bOverlappingCombatSphere = false;
 	bAttacking = false;
@@ -46,6 +49,10 @@ AEnemy::AEnemy(){
 	EnemyMovementStatus = EEnemyMovementStatus::EMS_Idle;
 
 	DeathDelay = 3.0f;
+
+	CurrentAttackTipSocket = FName("");
+	Attack1_TipSocket = FName("RightTipSocket");
+	Attack2_TipSocket = FName("LeftTipSocket");
 }
 
 // Called when the game starts or when spawned
@@ -61,13 +68,21 @@ void AEnemy::BeginPlay()
 	CombatSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatSphereOnOverlapBegin);
 	CombatSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatSphereOnOverlapEnd);
 
-	CombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
-	CombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
+	LeftCombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
+	LeftCombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
 
-	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-	CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	LeftCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LeftCombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	LeftCombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	LeftCombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
+	RightCombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
+	RightCombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
+
+	RightCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RightCombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	RightCombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	RightCombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -227,7 +242,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 
 			if (Char->HitParticles) {
 
-				const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName("TipSocket");
+				const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(CurrentAttackTipSocket);
 
 				if (TipSocket) {
 					FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
@@ -251,7 +266,9 @@ void AEnemy::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor
 
 void AEnemy::ActivateCollision()
 {
-	CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	LeftCombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	RightCombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
 	if (SwingSound) {
 		UGameplayStatics::PlaySound2D(this, SwingSound);
 	}
@@ -259,7 +276,9 @@ void AEnemy::ActivateCollision()
 
 void AEnemy::DeactivateCollision()
 {
-	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LeftCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RightCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 }
 
 void AEnemy::Attack()
@@ -275,8 +294,26 @@ void AEnemy::Attack()
 			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 			if (AnimInstance) {
-				AnimInstance->Montage_Play(CombatMontage, 1.35f);
-				AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
+				//Randomly choose between the 2 attack animations
+				int32 Section = FMath::RandRange(0, 1);
+
+				switch (Section) {
+
+				case 0:
+					AnimInstance->Montage_Play(CombatMontage, 2.20f);
+					AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
+					CurrentAttackTipSocket = Attack1_TipSocket;
+					break;
+
+				case 1:
+					AnimInstance->Montage_Play(CombatMontage, 1.80f);
+					AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
+					CurrentAttackTipSocket = Attack2_TipSocket;
+					break;
+
+				default:
+					break;
+				}
 			}
 
 		}
@@ -315,7 +352,9 @@ void AEnemy::Die(AActor* Causer)
 
 	EnemyMovementStatus = EEnemyMovementStatus::EMS_Dead;
 
-	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LeftCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RightCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	AgroSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CombatSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCapsuleComponent() ->SetCollisionEnabled(ECollisionEnabled::NoCollision);
