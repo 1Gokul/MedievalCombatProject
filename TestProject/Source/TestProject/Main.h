@@ -69,6 +69,9 @@ public:
 
 	bool bShiftKeyDown;
 
+	/** Player Movement*/
+
+	
 	bool bMovingForward;
 
 	bool bMovingRight;
@@ -157,11 +160,20 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	/** Called to check certain conditions before allowing Player movement */
+	bool bCanMove(float Value);
+
 	/** Called for front and back movement*/
 	void MoveForward(float Value);
 
+	/**Called for left and right player rotation (Yaw rotation)*/
+	void Turn(float Value);
+
+	/** Called for up and down player rotation (Pitch rotation)*/
+	void LookUp(float Value);
+
 	/**Called for left and right movement*/
-	void MoveRight(float Value);	
+	void MoveRight(float Value);
 
 	/** Called via input to turn at a given rate
 	* @param Rate This is normalized, i.e. 1.0 means 100% of desired turn rate

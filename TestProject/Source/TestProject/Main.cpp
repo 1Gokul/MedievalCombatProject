@@ -230,18 +230,36 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMain::MoveRight);
 
 
-	PlayerInputComponent->BindAxis("Turn", this, &AMain::AddControllerYawInput);
-	PlayerInputComponent->BindAxis("LookUp", this, &AMain::AddControllerPitchInput);
+	PlayerInputComponent->BindAxis("Turn", this, &AMain::Turn);
+	PlayerInputComponent->BindAxis("LookUp", this, &AMain::LookUp);
 	PlayerInputComponent->BindAxis("TurnRate", this, &AMain::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AMain::LookUpAtRate);
 
+}
+
+bool AMain::bCanMove(float Value)
+{
+	if (MainPlayerController) {
+
+		return(
+			   (Value != 0.0f)
+			&& (!bAttacking)
+			&& (MovementStatus != EMovementStatus::EMS_Dead)
+			&& (!MainPlayerController->bPauseMenuVisible)
+			);
+
+	}
+
+	else {
+		return false;
+	}
 }
 
 void AMain::MoveForward(float Value)
 {
 	bMovingForward = false;
 
-	if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking) && (MovementStatus != EMovementStatus::EMS_Dead)) {
+	if (bCanMove(Value)) {
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
@@ -252,11 +270,24 @@ void AMain::MoveForward(float Value)
 	}
 }
 
+void AMain::Turn(float Value)
+{
+	if (bCanMove(Value)) {
+		AddControllerYawInput(Value);
+	}
+}
+void AMain::LookUp(float Value)
+{
+	if (bCanMove(Value)) {
+		AddControllerPitchInput(Value);
+	}
+}
+
 void AMain::MoveRight(float Value)
 {
 	bMovingRight = false;
 
-	if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking) && (MovementStatus != EMovementStatus::EMS_Dead)) {
+	if (bCanMove(Value)) {
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
@@ -287,6 +318,10 @@ void AMain::LMBDown()
 	bLMBDown = true;
 
 	if (MovementStatus == EMovementStatus::EMS_Dead)return;
+
+	if (MainPlayerController) {
+		if (MainPlayerController->bPauseMenuVisible)return;
+	}
 
 	//If Player is overlapping with a weapon, they can equip it 
 	if (ActiveOverlappingItem) {
@@ -371,6 +406,8 @@ void AMain::DecrementHealth(float Amount)
 
 void AMain::Die()
 {
+	if (MovementStatus == EMovementStatus::EMS_Dead)return;
+
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && CombatMontage) {
 		AnimInstance->Montage_Play(CombatMontage, 1.0f);
@@ -471,6 +508,10 @@ void AMain::DeathEnd()
 
 void AMain::Jump()
 {
+	if (MainPlayerController) {
+		if (MainPlayerController->bPauseMenuVisible)return;
+	}
+
 	if (MovementStatus != EMovementStatus::EMS_Dead) {
 		Super::Jump();
 	}
@@ -582,5 +623,9 @@ void AMain::LoadGame(bool SetPosition)
 		SetActorLocation(LoadGameInstance->CharacterStats.Location);
 		SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
 	}
+
+	SetMovementStatus(EMovementStatus::EMS_Normal);
+	GetMesh()->bPauseAnims = false;
+	GetMesh()->bNoSkeletonUpdate = false;
 
 }
