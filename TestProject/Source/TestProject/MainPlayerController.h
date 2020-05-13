@@ -64,4 +64,5 @@ public:
 
 	void TogglePauseMenu();
 
+	void GameModeOnly();
 };
