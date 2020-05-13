@@ -683,8 +683,10 @@ void AMain::LoadGameNoSwitch()
 			FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
 
 			if (WeaponName != "") {
+
 				AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
 				WeaponToEquip->Equip(this);
+
 			}
 
 		}
