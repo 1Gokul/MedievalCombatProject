@@ -264,9 +264,17 @@ void AEnemy::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor
 {
 }
 
-void AEnemy::ActivateCollision()
+void AEnemy::ActivateCollisionLeft()
 {
 	LeftCombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	if (SwingSound) {
+		UGameplayStatics::PlaySound2D(this, SwingSound);
+	}
+}
+
+void AEnemy::ActivateCollisionRight()
+{
 	RightCombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
 	if (SwingSound) {
@@ -274,9 +282,14 @@ void AEnemy::ActivateCollision()
 	}
 }
 
-void AEnemy::DeactivateCollision()
+void AEnemy::DeactivateCollisionLeft()
 {
 	LeftCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+}
+
+void AEnemy::DeactivateCollisionRight()
+{
 	RightCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 }
