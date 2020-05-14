@@ -9,7 +9,7 @@
 // Sets default values
 ALevelTransitionVolume::ALevelTransitionVolume()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 
@@ -43,6 +43,7 @@ void ALevelTransitionVolume::OnOverlapBegin(UPrimitiveComponent* OverlappedCompo
 		AMain* Main = Cast<AMain>(OtherActor);
 
 		if (Main) {
+			Main->SaveGame();
 			Main->SwitchLevel(TransitionLevelName);
 		}
 	}

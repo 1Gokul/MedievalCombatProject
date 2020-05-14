@@ -25,7 +25,7 @@
 // Sets default values
 AMain::AMain()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	//Spring Arm (pulls towards player)
@@ -99,13 +99,16 @@ void AMain::BeginPlay()
 
 		LoadGameNoSwitch();
 
-		if (MainPlayerController) {
-			MainPlayerController->GameModeOnly();
-		}
+		//After loading the game without switching the level, save the game.
+		SaveGame();
+
 	}
 
-	
-	
+	//Return to game mode if game was loaded from the pause menu.
+	if (MainPlayerController) {
+		MainPlayerController->GameModeOnly();
+	}
+
 	//UKismetSystemLibrary::DrawDebugSphere(this, GetActorLocation() + FVector(0, 0, 75.0f), 50.0f, 12, FLinearColor::Red, 5.0f, 1.0f);
 }
 
@@ -238,7 +241,7 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &AMain::ESCDown);
 	PlayerInputComponent->BindAction("ESC", IE_Released, this, &AMain::ESCUp);
-	
+
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
 
@@ -258,7 +261,7 @@ bool AMain::bCanMove(float Value)
 	if (MainPlayerController) {
 
 		return(
-			   (Value != 0.0f)
+			(Value != 0.0f)
 			&& (!bAttacking)
 			&& (MovementStatus != EMovementStatus::EMS_Dead)
 			&& (!MainPlayerController->bPauseMenuVisible)
@@ -397,11 +400,11 @@ void AMain::Attack()
 			default:
 				break;
 			}
-			 
+
 		}
 
 	}
-	
+
 }
 
 void AMain::AttackEnd()
@@ -416,8 +419,8 @@ void AMain::AttackEnd()
 
 void AMain::DecrementHealth(float Amount)
 {
-	
-	
+
+
 }
 
 void AMain::Die()
@@ -471,7 +474,7 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet)
 		EquippedWeapon->Destroy();
 	}
 
-	EquippedWeapon = WeaponToSet; 
+	EquippedWeapon = WeaponToSet;
 }
 
 void AMain::ShiftKeyDown()
@@ -537,7 +540,7 @@ void AMain::UpdateCombatTarget()
 {
 	TArray<AActor*> OverlappingActors;
 
-	GetOverlappingActors(OverlappingActors, EnemyFilter);	
+	GetOverlappingActors(OverlappingActors, EnemyFilter);
 
 	if (OverlappingActors.Num() == 0) {
 
@@ -549,7 +552,7 @@ void AMain::UpdateCombatTarget()
 	}
 
 	AEnemy* ClosestEnemy = Cast<AEnemy>(OverlappingActors[0]);
-	
+
 	if (ClosestEnemy) {
 		FVector Location = GetActorLocation();
 
@@ -580,7 +583,7 @@ void AMain::SwitchLevel(FName LevelName)
 
 	if (World) {
 		FString CurrentLevel = World->GetMapName();
-		
+
 		FName CurrentLevelName(*CurrentLevel);
 
 		if (CurrentLevelName != LevelName) {
@@ -596,7 +599,7 @@ void AMain::SaveGame()
 	SaveGameInstance->CharacterStats.Health = Health;
 	SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
 	SaveGameInstance->CharacterStats.Stamina = Stamina;
-	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina; 
+	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
 	SaveGameInstance->CharacterStats.Coins = Coins;
 
 	if (EquippedWeapon) {
@@ -624,40 +627,43 @@ void AMain::LoadGame(bool SetPosition)
 
 	LoadGameInstance = Cast<UGameSave>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
 
-	Health = LoadGameInstance->CharacterStats.Health;
-	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
-	Stamina = LoadGameInstance->CharacterStats.Stamina;
-	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
-	Coins = LoadGameInstance->CharacterStats.Coins;
+	if (LoadGameInstance) {
 
-	if (WeaponStorage) {
+		Health = LoadGameInstance->CharacterStats.Health;
+		MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
+		Stamina = LoadGameInstance->CharacterStats.Stamina;
+		MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+		Coins = LoadGameInstance->CharacterStats.Coins;
 
-		//Create an Instance of WeaponStorage
-		AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
+		if (WeaponStorage) {
 
-		if (Weapons) {
-			FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
+			//Create an Instance of WeaponStorage
+			AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
 
-			if (WeaponName != "") {
-				AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
-				WeaponToEquip->Equip(this);
+			if (Weapons) {
+				FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
+
+				if (WeaponName != TEXT("")) {
+					AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
+					WeaponToEquip->Equip(this);
+				}
+
 			}
-
 		}
-	}
 
-	if (SetPosition) {
-		SetActorLocation(LoadGameInstance->CharacterStats.Location);
-		SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
-	}
+		if (SetPosition) {
+			SetActorLocation(LoadGameInstance->CharacterStats.Location);
+			SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
+		}
 
-	SetMovementStatus(EMovementStatus::EMS_Normal);
-	GetMesh()->bPauseAnims = false;
-	GetMesh()->bNoSkeletonUpdate = false;
+		SetMovementStatus(EMovementStatus::EMS_Normal);
+		GetMesh()->bPauseAnims = false;
+		GetMesh()->bNoSkeletonUpdate = false;
 
-	if (LoadGameInstance->CharacterStats.LevelName != "") {
-		
-		SwitchLevel(*LoadGameInstance->CharacterStats.LevelName);
+		if (LoadGameInstance->CharacterStats.LevelName != "") {
+
+			SwitchLevel(*LoadGameInstance->CharacterStats.LevelName);
+		}
 	}
 
 }
@@ -682,7 +688,7 @@ void AMain::LoadGameNoSwitch()
 		if (Weapons) {
 			FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
 
-			if (WeaponName != "") {
+			if (WeaponName != TEXT("")) {
 
 				AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
 				WeaponToEquip->Equip(this);
@@ -692,7 +698,7 @@ void AMain::LoadGameNoSwitch()
 		}
 	}
 
-	
+
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 	GetMesh()->bPauseAnims = false;
 	GetMesh()->bNoSkeletonUpdate = false;
