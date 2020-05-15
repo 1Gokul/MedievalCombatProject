@@ -89,19 +89,18 @@ void AMain::BeginPlay()
 	Super::BeginPlay();
 
 	MainPlayerController = Cast<AMainPlayerController>(GetController());
-
-	//If the level is the first level, don't load the game and start over instead.
-
+	
 	FString MapName = GetWorld()->GetMapName();
 	MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
 
+	//If the level is not the first level,
 	if (MapName != "SunTemple") {
 
+		//Load all items of player after level transition
 		LoadGameNoSwitch();
 
-		//After loading the game without switching the level, save the game.
+		//Save the game.
 		SaveGame();
-
 	}
 
 	//Return to game mode if game was loaded from the pause menu.
@@ -109,7 +108,6 @@ void AMain::BeginPlay()
 		MainPlayerController->GameModeOnly();
 	}
 
-	//UKismetSystemLibrary::DrawDebugSphere(this, GetActorLocation() + FVector(0, 0, 75.0f), 50.0f, 12, FLinearColor::Red, 5.0f, 1.0f);
 }
 
 // Called every frame
@@ -660,7 +658,13 @@ void AMain::LoadGame(bool SetPosition)
 		GetMesh()->bPauseAnims = false;
 		GetMesh()->bNoSkeletonUpdate = false;
 
-		if (LoadGameInstance->CharacterStats.LevelName != "") {
+
+		FString MapName = GetWorld()->GetMapName();
+		MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+
+		//If map name is not empty AND it is not the current map, change the level
+		if ((LoadGameInstance->CharacterStats.LevelName != "")
+				&& (LoadGameInstance->CharacterStats.LevelName != MapName)){
 
 			SwitchLevel(*LoadGameInstance->CharacterStats.LevelName);
 		}

@@ -43,7 +43,11 @@ void ALevelTransitionVolume::OnOverlapBegin(UPrimitiveComponent* OverlappedCompo
 		AMain* Main = Cast<AMain>(OtherActor);
 
 		if (Main) {
+
+			//Save all items of the player
 			Main->SaveGame();
+
+			//Transition to new Level
 			Main->SwitchLevel(TransitionLevelName);
 		}
 	}
