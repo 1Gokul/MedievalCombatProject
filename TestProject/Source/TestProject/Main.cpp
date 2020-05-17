@@ -3,6 +3,7 @@
 
 #include "Main.h"
 #include "Weapon.h"
+#include "Shield.h"
 #include "Enemy.h"
 #include "MainPlayerController.h"
 #include "GameSave.h"
@@ -68,10 +69,13 @@ AMain::AMain()
 
 	bShiftKeyDown = false;
 	bLMBDown = false;
+	bRMBDown = false;
 	bAttacking = false;
+	bBlocking = false;
 	bHasCombatTarget = false;
 	bMovingForward = false;
 	bMovingRight = false;
+	bInterpToEnemy = false;
 
 	MovementStatus = EMovementStatus::EMS_Normal;
 	StaminaStatus = EStaminaStatus::ESS_Normal;
@@ -80,7 +84,7 @@ AMain::AMain()
 	MinSprintStamina = 50.0f;
 
 	InterpSpeed = 15.0f;
-	bInterpToEnemy = false;
+	
 }
 
 // Called when the game starts or when spawned
@@ -340,19 +344,46 @@ void AMain::LMBDown()
 		if (MainPlayerController->bPauseMenuVisible)return;
 	}
 
-	//If Player is overlapping with a weapon, they can equip it 
+	//If Player is overlapping with an Item, they can equip it 
 	if (ActiveOverlappingItem) {
-		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
 
+		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
 		if (Weapon) {
 			Weapon->Equip(this);
 			SetActiveOverlappingItem(nullptr);
+		}
+		else {
+			AShield* Shield = Cast<AShield>(ActiveOverlappingItem);
+			if (Shield) {
+				Shield->Equip(this);
+				SetActiveOverlappingItem(nullptr);
+			}
 		}
 	}
 
 	//else if Player already has a weapon equipped, perform combat action
 	else if (EquippedWeapon) {
 		Attack();
+	}
+}
+
+void AMain::RMBUp()
+{
+	bRMBDown = false;
+}
+
+void AMain::RMBDown()
+{
+	bRMBDown = true;
+
+	if (MovementStatus == EMovementStatus::EMS_Dead)return;
+
+	if (MainPlayerController) {
+		if (MainPlayerController->bPauseMenuVisible)return;
+	}
+
+	if (EquippedShield) {
+		Block();
 	}
 }
 
@@ -415,10 +446,12 @@ void AMain::AttackEnd()
 	}
 }
 
-void AMain::DecrementHealth(float Amount)
+void AMain::Block()
 {
+}
 
-
+void AMain::BlockEnd()
+{
 }
 
 void AMain::Die()
@@ -473,6 +506,15 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet)
 	}
 
 	EquippedWeapon = WeaponToSet;
+}
+
+void AMain::SetEquippedShield(AShield* ShieldToSet)
+{
+	if (EquippedShield) {
+		EquippedShield->Destroy();
+	}
+
+	EquippedShield = ShieldToSet;
 }
 
 void AMain::ShiftKeyDown()

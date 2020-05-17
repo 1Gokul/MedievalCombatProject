@@ -39,6 +39,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
 	class AWeapon* EquippedWeapon;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
+		class AShield* EquippedShield;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
 	class AItem* ActiveOverlappingItem;
 
@@ -94,11 +97,17 @@ public:
 	/** LMB: Left Mouse Button*/
 	bool bLMBDown;
 
+	/** RMB: Right Mouse Button*/
+	bool bRMBDown;
+
 	/** ESC: Escape Button*/
 	bool bESCDown;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 		bool bAttacking;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
+		bool bBlocking;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 		class UAnimMontage* CombatMontage;
@@ -189,6 +198,10 @@ public:
 	void LMBUp();
 	void LMBDown();
 
+	/** RMB: Right Mouse Button*/
+	void RMBUp();
+	void RMBDown();
+
 	/** ESC: Escape Button*/
 	void ESCUp();
 	void ESCDown();
@@ -197,6 +210,11 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
+
+	void Block();
+
+	UFUNCTION(BlueprintCallable)
+	void BlockEnd();
 
 	//getters
 
@@ -215,6 +233,8 @@ public:
 	FORCEINLINE void SetStaminaStatus(EStaminaStatus Status) { StaminaStatus = Status; }
 
 	void SetEquippedWeapon(AWeapon* WeaponToSet);
+
+	void SetEquippedShield(AShield* ShieldToSet);
 
 	FORCEINLINE void SetActiveOverlappingItem(AItem* ItemToSet) { ActiveOverlappingItem = ItemToSet; }
 

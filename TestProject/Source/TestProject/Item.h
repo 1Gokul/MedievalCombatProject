@@ -21,7 +21,7 @@ public:
 
 	/**Item mesh*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Mesh")
-	class UStaticMeshComponent* Mesh;
+	class UStaticMeshComponent* StaticMesh;
 
 	/** Particle Component when the item is idle and has not been picked up */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
