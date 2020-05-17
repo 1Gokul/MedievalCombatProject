@@ -241,6 +241,9 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &AMain::LMBDown);
 	PlayerInputComponent->BindAction("LMB", IE_Released, this, &AMain::LMBUp);
 
+	PlayerInputComponent->BindAction("RMB", IE_Pressed, this, &AMain::RMBDown);
+	PlayerInputComponent->BindAction("RMB", IE_Released, this, &AMain::RMBUp);
+
 	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &AMain::ESCDown);
 	PlayerInputComponent->BindAction("ESC", IE_Released, this, &AMain::ESCUp);
 
@@ -448,10 +451,56 @@ void AMain::AttackEnd()
 
 void AMain::Block()
 {
+	if (MovementStatus != EMovementStatus::EMS_Dead) {
+		//if Player was not already blocking
+		if (!bBlocking) {
+			bBlocking = true;
+
+			//Play the "Going To Block" Animation
+			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+			if (AnimInstance && CombatMontage) {
+
+				AnimInstance->Montage_Play(CombatMontage, 1.0f);
+				AnimInstance->Montage_JumpToSection(FName("BlockStart"), CombatMontage);
+
+			}
+		}
+		//If already blocking,
+		else{
+
+			//Play the "Blocking Idle" animation
+			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+			if (AnimInstance && CombatMontage) {
+					AnimInstance->Montage_Play(CombatMontage, 1.0f);
+					AnimInstance->Montage_JumpToSection(FName("BlockIdle"), CombatMontage);
+			}
+		}
+	}
 }
 
 void AMain::BlockEnd()
 {
+	if (bRMBDown) {
+		
+		Block();
+	}
+
+	else {
+
+		//Play the animation to go from blocking stance to normal
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		if (AnimInstance && CombatMontage) {
+
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("BlockEnd"), CombatMontage);
+
+		}
+
+		bBlocking = false;
+	}
 }
 
 void AMain::Die()
