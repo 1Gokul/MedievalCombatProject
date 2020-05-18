@@ -5,6 +5,7 @@
 #include "Components/SphereComponent.h"
 #include "AIController.h"
 #include "Main.h"
+#include "Shield.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -237,24 +238,55 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 {
 	if (OtherActor) {
 
-		AMain* Char = Cast<AMain>(OtherActor);
-		if (Char) {
+		AShield* Shield = Cast<AShield>(OtherActor);
 
-			if (Char->HitParticles) {
+		if (Shield) {
 
-				const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(CurrentAttackTipSocket);
+			//Just in case if the weapons come in contact with the player even after a block
+			DeactivateCollisionLeft();
+			DeactivateCollisionRight();
 
-				if (TipSocket) {
-					FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
-					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Char->HitParticles, SocketLocation, FRotator(0.0f), true);
+			//PLAY STAGGERED ANIMATION FOR ENEMY
 
+			AMain* Char = Cast<AMain>(OtherActor);
+
+			if (Char) {
+
+				//PLAY STAGGERED ANIMATION FOR CHARACTER
+
+				if (DamageTypeClass) {
+					UGameplayStatics::ApplyDamage(Char, DamageIfBlocked, AIController, this, DamageTypeClass);
 				}
 			}
-			if (Char->HitSound) {
-				UGameplayStatics::PlaySound2D(this, Char->HitSound);
+
+			if (Shield->BlockSound) {
+				UGameplayStatics::PlaySound2D(this, Shield->BlockSound);
 			}
-			if (DamageTypeClass) {
-				UGameplayStatics::ApplyDamage(Char, Damage, AIController, this, DamageTypeClass);
+
+			//Play spark animation
+		}
+
+		else {
+			AMain* Char = Cast<AMain>(OtherActor);
+
+			if (Char) {
+
+				if (Char->HitParticles) {
+
+					const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(CurrentAttackTipSocket);
+
+					if (TipSocket) {
+						FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
+						UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Char->HitParticles, SocketLocation, FRotator(0.0f), true);
+
+					}
+				}
+				if (Char->HitSound) {
+					UGameplayStatics::PlaySound2D(this, Char->HitSound);
+				}
+				if (DamageTypeClass) {
+					UGameplayStatics::ApplyDamage(Char, Damage, AIController, this, DamageTypeClass);
+				}
 			}
 		}
 	}

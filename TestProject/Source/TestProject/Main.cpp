@@ -64,8 +64,8 @@ AMain::AMain()
 	Stamina = 120.0f;
 	Coins = 0;
 
-	RunningSpeed = 650.0f;
-	SprintingSpeed = 950.0f;
+	RunningSpeed = 600.0f;
+	SprintingSpeed = 850.0f;
 
 	bShiftKeyDown = false;
 	bLMBDown = false;
@@ -121,7 +121,7 @@ void AMain::Tick(float DeltaTime)
 
 	if (MovementStatus == EMovementStatus::EMS_Dead)return;
 
-
+	// Decrease in Stamina per second when sprinting.
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
 
 	switch (StaminaStatus) {
@@ -218,6 +218,7 @@ void AMain::Tick(float DeltaTime)
 		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
 		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
 
+		//Rotate to be directly facing the current Combat Target.
 		SetActorRotation(InterpRotation);
 	}
 
@@ -268,6 +269,7 @@ bool AMain::bCanMove(float Value)
 		return(
 			(Value != 0.0f)
 			&& (!bAttacking)
+			&& (!bBlocking)
 			&& (MovementStatus != EMovementStatus::EMS_Dead)
 			&& (!MainPlayerController->bPauseMenuVisible)
 			);
@@ -350,12 +352,14 @@ void AMain::LMBDown()
 	//If Player is overlapping with an Item, they can equip it 
 	if (ActiveOverlappingItem) {
 
+		//If the Item is a Weapon
 		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
 		if (Weapon) {
 			Weapon->Equip(this);
 			SetActiveOverlappingItem(nullptr);
 		}
 		else {
+			//If the Item is a Shield
 			AShield* Shield = Cast<AShield>(ActiveOverlappingItem);
 			if (Shield) {
 				Shield->Equip(this);
@@ -364,8 +368,10 @@ void AMain::LMBDown()
 		}
 	}
 
-	//else if Player already has a weapon equipped, perform combat action
-	else if (EquippedWeapon) {
+	/** else if Player already has a weapon equipped AND
+	*	is not already blocking, perform an Attack.
+	*/
+	else if (EquippedWeapon && !bBlocking) {
 		Attack();
 	}
 }
@@ -385,7 +391,10 @@ void AMain::RMBDown()
 		if (MainPlayerController->bPauseMenuVisible)return;
 	}
 
-	if (EquippedShield) {
+	/** else if Player already has a shield equipped AND
+	*	is not already attacking, perform a Block.
+	*/
+	if (EquippedShield && !bAttacking) {
 		Block();
 	}
 }
@@ -399,6 +408,7 @@ void AMain::ESCDown()
 {
 	bESCDown = true;
 
+	
 	if (MainPlayerController) {
 		MainPlayerController->TogglePauseMenu();
 	}
@@ -444,6 +454,7 @@ void AMain::AttackEnd()
 	bAttacking = false;
 	SetInterpToEnemy(false);
 
+	//If Player is still holding LMBDown, attack again.
 	if (bLMBDown) {
 		Attack();
 	}
@@ -452,6 +463,7 @@ void AMain::AttackEnd()
 void AMain::Block()
 {
 	if (MovementStatus != EMovementStatus::EMS_Dead) {
+
 		//if Player was not already blocking
 		if (!bBlocking) {
 			bBlocking = true;
@@ -473,7 +485,7 @@ void AMain::Block()
 			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 			if (AnimInstance && CombatMontage) {
-					AnimInstance->Montage_Play(CombatMontage, 1.0f);
+					AnimInstance->Montage_Play(CombatMontage, 3.0f);
 					AnimInstance->Montage_JumpToSection(FName("BlockIdle"), CombatMontage);
 			}
 		}
@@ -483,18 +495,16 @@ void AMain::Block()
 void AMain::BlockEnd()
 {
 	if (bRMBDown) {
-		
 		Block();
 	}
 
-	else {
-
+	else{
 		//Play the animation to go from blocking stance to normal
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 		if (AnimInstance && CombatMontage) {
 
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_Play(CombatMontage, 3.0f);
 			AnimInstance->Montage_JumpToSection(FName("BlockEnd"), CombatMontage);
 
 		}
@@ -509,7 +519,7 @@ void AMain::Die()
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && CombatMontage) {
-		AnimInstance->Montage_Play(CombatMontage, 1.0f);
+		AnimInstance->Montage_Play(CombatMontage, 3.0f);
 		AnimInstance->Montage_JumpToSection(FName("Death"));
 	}
 }
