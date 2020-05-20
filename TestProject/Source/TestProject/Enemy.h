@@ -46,7 +46,7 @@ public:
 		bool bOverlappingCombatSphere;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
-		AMain* CombatTarget;
+		class AMain* CombatTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	float Health;
@@ -91,6 +91,7 @@ public:
 	bool bHasValidTarget;
 
 	FTimerHandle AttackTimer;
+
 
 	FTimerHandle DeathTimer;
 

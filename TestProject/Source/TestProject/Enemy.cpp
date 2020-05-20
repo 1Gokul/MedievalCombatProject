@@ -5,7 +5,7 @@
 #include "Components/SphereComponent.h"
 #include "AIController.h"
 #include "Main.h"
-#include "Shield.h"
+#include "MainShield.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -43,6 +43,7 @@ AEnemy::AEnemy(){
 	Health = 75.0f;
 	MaxHealth = 100.0f;
 	Damage = 10.0f;
+	DamageIfBlocked = 5.0f;
 
 	MinAttackTime = 0.50f;
 	MaxAttackTime = 3.50f;
@@ -217,7 +218,7 @@ void AEnemy::MoveToTarget(AMain* Target)
 
 		FAIMoveRequest MoveRequest;
 		MoveRequest.SetGoalActor(Target);
-		MoveRequest.SetAcceptanceRadius(10.0f);
+		MoveRequest.SetAcceptanceRadius(75.0f);
 
 		FNavPathSharedPtr NavPath;
 
@@ -238,35 +239,6 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 {
 	if (OtherActor) {
 
-		AShield* Shield = Cast<AShield>(OtherActor);
-
-		if (Shield) {
-
-			//Just in case if the weapons come in contact with the player even after a block
-			DeactivateCollisionLeft();
-			DeactivateCollisionRight();
-
-			//PLAY STAGGERED ANIMATION FOR ENEMY
-
-			AMain* Char = Cast<AMain>(OtherActor);
-
-			if (Char) {
-
-				//PLAY STAGGERED ANIMATION FOR CHARACTER
-
-				if (DamageTypeClass) {
-					UGameplayStatics::ApplyDamage(Char, DamageIfBlocked, AIController, this, DamageTypeClass);
-				}
-			}
-
-			if (Shield->BlockSound) {
-				UGameplayStatics::PlaySound2D(this, Shield->BlockSound);
-			}
-
-			//Play spark animation
-		}
-
-		else {
 			AMain* Char = Cast<AMain>(OtherActor);
 
 			if (Char) {
@@ -288,7 +260,18 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 					UGameplayStatics::ApplyDamage(Char, Damage, AIController, this, DamageTypeClass);
 				}
 			}
-		}
+			else {
+				AMainShield* Shield = Cast<AMainShield>(OtherActor);
+				if (Shield) {
+					UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+					if (AnimInstance && CombatMontage) {
+
+						AnimInstance->Montage_Play(CombatMontage, 2.0f);
+						AnimInstance->Montage_JumpToSection("Stunned", CombatMontage);
+					}
+				}
+			}
 	}
 }
 
@@ -374,6 +357,7 @@ void AEnemy::AttackEnd()
 	}
 }
 
+
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (Health - DamageAmount <= 0.0f) {
@@ -402,7 +386,7 @@ void AEnemy::Die(AActor* Causer)
 
 	AgroSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CombatSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetCapsuleComponent() ->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	bAttacking = false;
 

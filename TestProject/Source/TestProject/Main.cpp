@@ -3,7 +3,7 @@
 
 #include "Main.h"
 #include "Weapon.h"
-#include "Shield.h"
+#include "MainShield.h"
 #include "Enemy.h"
 #include "MainPlayerController.h"
 #include "GameSave.h"
@@ -268,8 +268,7 @@ bool AMain::bCanMove(float Value)
 
 		return(
 			(Value != 0.0f)
-			&& (!bAttacking)
-			&& (!bBlocking)
+			&& (!bAttacking)			
 			&& (MovementStatus != EMovementStatus::EMS_Dead)
 			&& (!MainPlayerController->bPauseMenuVisible)
 			);
@@ -285,7 +284,7 @@ void AMain::MoveForward(float Value)
 {
 	bMovingForward = false;
 
-	if (bCanMove(Value)) {
+	if (bCanMove(Value) && (!bBlocking)) {
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
@@ -313,7 +312,7 @@ void AMain::MoveRight(float Value)
 {
 	bMovingRight = false;
 
-	if (bCanMove(Value)) {
+	if (bCanMove(Value) && (!bBlocking)) {
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
@@ -358,14 +357,14 @@ void AMain::LMBDown()
 			Weapon->Equip(this);
 			SetActiveOverlappingItem(nullptr);
 		}
-		else {
-			//If the Item is a Shield
-			AShield* Shield = Cast<AShield>(ActiveOverlappingItem);
-			if (Shield) {
-				Shield->Equip(this);
-				SetActiveOverlappingItem(nullptr);
-			}
-		}
+	}
+
+	else if(ActiveOverlappingShield)
+	{
+			ActiveOverlappingShield->Equip(this);
+			SetActiveOverlappingItem(nullptr);
+		
+	
 	}
 
 	/** else if Player already has a weapon equipped AND
@@ -513,6 +512,40 @@ void AMain::BlockEnd()
 	}
 }
 
+void AMain::BlockImpact()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && CombatMontage) {
+
+		//Randomly choose between the 2 attack animations
+		int32 Section = FMath::RandRange(0, 2);
+
+		switch (Section) {
+
+		case 0:
+			AnimInstance->Montage_Play(CombatMontage, 2.0f);
+			AnimInstance->Montage_JumpToSection(FName("Impact_1"), CombatMontage);
+			break;
+
+		case 1:
+			AnimInstance->Montage_Play(CombatMontage, 2.0f);
+			AnimInstance->Montage_JumpToSection(FName("Impact_2"), CombatMontage);
+			break;
+
+		case 2:
+			AnimInstance->Montage_Play(CombatMontage, 2.0f);
+			AnimInstance->Montage_JumpToSection(FName("Impact_3"), CombatMontage);
+			break;
+
+		default:
+			break;
+		}
+
+	}
+}
+
+
 void AMain::Die()
 {
 	if (MovementStatus == EMovementStatus::EMS_Dead)return;
@@ -567,7 +600,7 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet)
 	EquippedWeapon = WeaponToSet;
 }
 
-void AMain::SetEquippedShield(AShield* ShieldToSet)
+void AMain::SetEquippedShield(AMainShield* ShieldToSet)
 {
 	if (EquippedShield) {
 		EquippedShield->Destroy();

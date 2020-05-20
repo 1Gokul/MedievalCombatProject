@@ -40,10 +40,13 @@ public:
 	class AWeapon* EquippedWeapon;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
-		class AShield* EquippedShield;
+		class AMainShield* EquippedShield;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
 	class AItem* ActiveOverlappingItem;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
+	class AMainShield* ActiveOverlappingShield;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
 		class AMainPlayerController* MainPlayerController;
@@ -216,6 +219,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void BlockEnd();
 
+	void BlockImpact();
+
 	//getters
 
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
@@ -234,17 +239,15 @@ public:
 
 	void SetEquippedWeapon(AWeapon* WeaponToSet);
 
-	void SetEquippedShield(AShield* ShieldToSet);
+	void SetEquippedShield(AMainShield* ShieldToSet);
 
 	FORCEINLINE void SetActiveOverlappingItem(AItem* ItemToSet) { ActiveOverlappingItem = ItemToSet; }
 
+	FORCEINLINE void SetActiveOverlappingShield(AMainShield* ShieldToSet) { ActiveOverlappingShield = ShieldToSet; }
+																					  
 	FORCEINLINE void SetCombatTarget(AEnemy* Target) { CombatTarget = Target; }
 
 	FORCEINLINE void SetHasCombatTarget(bool HasTarget) { bHasCombatTarget = HasTarget; }
-
-
-	/** Called to decrease health of player if they take damage */
-	void DecrementHealth(float Amount);
 
 	/** Called if health of player becomes lesss than equal to zero */
 	void Die();
