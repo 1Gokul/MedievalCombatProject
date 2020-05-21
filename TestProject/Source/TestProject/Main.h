@@ -97,6 +97,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 		float BaseLookUpRate;
 
+	float NormalWalkSpeed;
+	
+	float BlockingWalkSpeed;
+	
+
 	/** LMB: Left Mouse Button*/
 	bool bLMBDown;
 

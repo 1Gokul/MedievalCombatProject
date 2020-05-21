@@ -260,9 +260,13 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 					UGameplayStatics::ApplyDamage(Char, Damage, AIController, this, DamageTypeClass);
 				}
 			}
+		
 			else {
 				AMainShield* Shield = Cast<AMainShield>(OtherActor);
 				if (Shield) {
+
+					UE_LOG(LogTemp, Warning, TEXT("SHIELD DETECTED"));
+					
 					UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 					if (AnimInstance && CombatMontage) {

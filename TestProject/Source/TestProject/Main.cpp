@@ -67,6 +67,9 @@ AMain::AMain()
 	RunningSpeed = 600.0f;
 	SprintingSpeed = 850.0f;
 
+	NormalWalkSpeed = 600.0f;
+	BlockingWalkSpeed = 150.0f;
+
 	bShiftKeyDown = false;
 	bLMBDown = false;
 	bRMBDown = false;
@@ -138,7 +141,7 @@ void AMain::Tick(float DeltaTime)
 				Stamina -= DeltaStamina;
 			}
 
-			if (bMovingForward || bMovingRight) {
+			if ((bMovingForward || bMovingRight) && (!bBlocking)) {
 				SetMovementStatus(EMovementStatus::EMS_Sprinting);
 			}
 			else {
@@ -166,7 +169,7 @@ void AMain::Tick(float DeltaTime)
 			}
 			else {
 				Stamina -= DeltaStamina;
-				if (bMovingForward || bMovingRight) {
+				if ((bMovingForward || bMovingRight) && (!bBlocking)) {
 					SetMovementStatus(EMovementStatus::EMS_Sprinting);
 				}
 				else {
@@ -284,7 +287,7 @@ void AMain::MoveForward(float Value)
 {
 	bMovingForward = false;
 
-	if (bCanMove(Value) && (!bBlocking)) {
+	if (bCanMove(Value)) {
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
@@ -312,7 +315,7 @@ void AMain::MoveRight(float Value)
 {
 	bMovingRight = false;
 
-	if (bCanMove(Value) && (!bBlocking)) {
+	if (bCanMove(Value)) {
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
@@ -362,7 +365,7 @@ void AMain::LMBDown()
 	else if(ActiveOverlappingShield)
 	{
 			ActiveOverlappingShield->Equip(this);
-			SetActiveOverlappingItem(nullptr);
+			SetActiveOverlappingShield(nullptr);
 		
 	
 	}
@@ -377,7 +380,11 @@ void AMain::LMBDown()
 
 void AMain::RMBUp()
 {
+	bBlocking = false;
 	bRMBDown = false;
+
+	 //GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+	//EquippedShield->DeactivateCollision();
 }
 
 void AMain::RMBDown()
@@ -393,11 +400,20 @@ void AMain::RMBDown()
 	/** else if Player already has a shield equipped AND
 	*	is not already attacking, perform a Block.
 	*/
-	if (EquippedShield && !bAttacking) {
-		Block();
+	if (EquippedShield && !bAttacking)
+	{
+		if (MovementStatus != EMovementStatus::EMS_Dead)
+		{
+			//Activate collision so that the MainShield can detect Overlaps.
+			//EquippedShield->ActivateCollision();
+			//
+			//Lower speed of walking
+			//GetCharacterMovement()->MaxWalkSpeed = BlockingWalkSpeed;
+			
+			if (!bBlocking)bBlocking = true;
+		}
 	}
 }
-
 void AMain::ESCUp()
 {
 	bESCDown = false;
@@ -459,90 +475,101 @@ void AMain::AttackEnd()
 	}
 }
 
+//NOT BEING USED
 void AMain::Block()
 {
-	if (MovementStatus != EMovementStatus::EMS_Dead) {
+	//if (MovementStatus != EMovementStatus::EMS_Dead) {
 
-		//if Player was not already blocking
-		if (!bBlocking) {
-			bBlocking = true;
+	//	//Activate collision so that the MainShield can detect Overlaps.
+	//	EquippedShield->ActivateCollision();
 
-			//Play the "Going To Block" Animation
-			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-			if (AnimInstance && CombatMontage) {
 
-				AnimInstance->Montage_Play(CombatMontage, 1.0f);
-				AnimInstance->Montage_JumpToSection(FName("BlockStart"), CombatMontage);
+	//	if(!bBlocking)bBlocking = true;
+		//Combat Montage method
+		
+		////if Player was not already blocking
+		//if (!bBlocking) {
+		//	bBlocking = true;
 
-			}
-		}
-		//If already blocking,
-		else{
+		//	//Play the "Going To Block" Animation
+		//	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-			//Play the "Blocking Idle" animation
-			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		//	if (AnimInstance && CombatMontage) {
 
-			if (AnimInstance && CombatMontage) {
-					AnimInstance->Montage_Play(CombatMontage, 3.0f);
-					AnimInstance->Montage_JumpToSection(FName("BlockIdle"), CombatMontage);
-			}
-		}
-	}
+		//		AnimInstance->Montage_Play(CombatMontage, 1.0f);
+		//		AnimInstance->Montage_JumpToSection(FName("BlockStart"), CombatMontage);
+
+		//	}
+		//}
+		////If already blocking,
+		//else{
+
+		//	//Play the "Blocking Idle" animation
+		//	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		//	if (AnimInstance && CombatMontage) {
+		//			AnimInstance->Montage_Play(CombatMontage, 3.0f);
+		//			AnimInstance->Montage_JumpToSection(FName("BlockIdle"), CombatMontage);
+		//	}
+		//}
+	//}
 }
 
+//NOT BEING USED
 void AMain::BlockEnd()
 {
-	if (bRMBDown) {
-		Block();
-	}
+	//if (bRMBDown) {
+	//	Block();
+	//}
 
-	else{
-		//Play the animation to go from blocking stance to normal
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	//else{
+	//	//Play the animation to go from blocking stance to normal
+	//	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-		if (AnimInstance && CombatMontage) {
+	//	if (AnimInstance && CombatMontage) {
 
-			AnimInstance->Montage_Play(CombatMontage, 3.0f);
-			AnimInstance->Montage_JumpToSection(FName("BlockEnd"), CombatMontage);
+	//		AnimInstance->Montage_Play(CombatMontage, 3.0f);
+	//		AnimInstance->Montage_JumpToSection(FName("BlockEnd"), CombatMontage);
 
-		}
+	//	}
 
-		bBlocking = false;
-	}
+	//	bBlocking = false;
+	//}
 }
 
+//NOT BEING USED
 void AMain::BlockImpact()
 {
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (AnimInstance && CombatMontage) {
+	//if (AnimInstance && CombatMontage) {
 
-		//Randomly choose between the 2 attack animations
-		int32 Section = FMath::RandRange(0, 2);
+	//	//Randomly choose between the 2 attack animations
+	//	int32 Section = FMath::RandRange(0, 2);
 
-		switch (Section) {
+	//	switch (Section) {
 
-		case 0:
-			AnimInstance->Montage_Play(CombatMontage, 2.0f);
-			AnimInstance->Montage_JumpToSection(FName("Impact_1"), CombatMontage);
-			break;
+	//	case 0:
+	//		AnimInstance->Montage_Play(CombatMontage, 2.0f);
+	//		AnimInstance->Montage_JumpToSection(FName("Impact_1"), CombatMontage);
+	//		break;
 
-		case 1:
-			AnimInstance->Montage_Play(CombatMontage, 2.0f);
-			AnimInstance->Montage_JumpToSection(FName("Impact_2"), CombatMontage);
-			break;
+	//	case 1:
+	//		AnimInstance->Montage_Play(CombatMontage, 2.0f);
+	//		AnimInstance->Montage_JumpToSection(FName("Impact_2"), CombatMontage);
+	//		break;
 
-		case 2:
-			AnimInstance->Montage_Play(CombatMontage, 2.0f);
-			AnimInstance->Montage_JumpToSection(FName("Impact_3"), CombatMontage);
-			break;
+	//	case 2:
+	//		AnimInstance->Montage_Play(CombatMontage, 2.0f);
+	//		AnimInstance->Montage_JumpToSection(FName("Impact_3"), CombatMontage);
+	//		break;
 
-		default:
-			break;
-		}
+	//	default:
+	//		break;
+	//	}
 
-	}
+	//}
 }
 
 
@@ -586,7 +613,12 @@ void AMain::SetMovementStatus(EMovementStatus Status)
 	if (MovementStatus == EMovementStatus::EMS_Sprinting) {
 		GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
 	}
-	else {
+	else if(bBlocking)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BlockingWalkSpeed;
+	}
+	
+	else{
 		GetCharacterMovement()->MaxWalkSpeed = RunningSpeed;
 	}
 }
@@ -663,7 +695,7 @@ void AMain::Jump()
 		if (MainPlayerController->bPauseMenuVisible)return;
 	}
 
-	if (MovementStatus != EMovementStatus::EMS_Dead) {
+	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking)) {
 		Super::Jump();
 	}
 }
