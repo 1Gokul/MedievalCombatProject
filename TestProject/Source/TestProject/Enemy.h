@@ -145,6 +145,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void MoveToTarget(class AMain* Main);
+	
+	void InflictDamageOnMain(AMain* Char, bool bHitFromBehind);
 
 	/**Called if a Combat Overlap Event starts. */
 	UFUNCTION()

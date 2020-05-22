@@ -40,13 +40,10 @@ public:
 	class AWeapon* EquippedWeapon;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
-		class AMainShield* EquippedShield;
+		class AShield* EquippedShield;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
 	class AItem* ActiveOverlappingItem;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
-	class AMainShield* ActiveOverlappingShield;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
 		class AMainPlayerController* MainPlayerController;
@@ -224,7 +221,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void BlockEnd();
 
-	void BlockImpact();
+	void Impact(int32 Section);
+	
+	void BlockImpact(int32 Section);
 
 	//getters
 
@@ -244,11 +243,9 @@ public:
 
 	void SetEquippedWeapon(AWeapon* WeaponToSet);
 
-	void SetEquippedShield(AMainShield* ShieldToSet);
+	void SetEquippedShield(AShield* ShieldToSet);
 
 	FORCEINLINE void SetActiveOverlappingItem(AItem* ItemToSet) { ActiveOverlappingItem = ItemToSet; }
-
-	FORCEINLINE void SetActiveOverlappingShield(AMainShield* ShieldToSet) { ActiveOverlappingShield = ShieldToSet; }
 																					  
 	FORCEINLINE void SetCombatTarget(AEnemy* Target) { CombatTarget = Target; }
 

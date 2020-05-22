@@ -5,8 +5,9 @@
 #include "Components/SphereComponent.h"
 #include "AIController.h"
 #include "Main.h"
-#include "MainShield.h"
+#include "Shield.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -235,47 +236,94 @@ void AEnemy::MoveToTarget(AMain* Target)
 }
 
 
+void AEnemy::InflictDamageOnMain(AMain* Char, bool bHitFromBehind)
+{
+	if(bHitFromBehind)
+	{
+		 Char->Impact(0);
+	}
+	else
+	{
+		
+	}
+	
+	if (Char->HitParticles)
+	{														 
+		const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(CurrentAttackTipSocket);
+		
+		if (TipSocket)
+		{
+			FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Char->HitParticles, SocketLocation,
+			                                         FRotator(0.0f), true);
+		}
+	}
+	if (Char->HitSound)
+	{
+		UGameplayStatics::PlaySound2D(this, Char->HitSound);
+	}
+	if (DamageTypeClass)
+	{
+		UGameplayStatics::ApplyDamage(Char, Damage, AIController, this, DamageTypeClass);
+	}
+}
+
 void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor) {
+	if (OtherActor)
+	{
+		AMain* Char = Cast<AMain>(OtherActor);
 
-			AMain* Char = Cast<AMain>(OtherActor);
+		if (Char)
+		{
+			if (Char->bBlocking)
+			{
+				FVector MainLocation = Char->GetActorLocation();
+				FVector EnemyLocation = GetActorLocation();
 
-			if (Char) {
+				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(MainLocation, EnemyLocation);
 
-				if (Char->HitParticles) {
+				FRotator MainRotation = Char->GetActorRotation();
 
-					const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(CurrentAttackTipSocket);
+				FRotator DeltaRotator = UKismetMathLibrary::NormalizedDeltaRotator(MainRotation, LookAtRotation);
+				  
+				//UKismetMathLibrary::BreakRotator(DeltaRotator, DeltaRotatorYaw);
 
-					if (TipSocket) {
-						FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
-						UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Char->HitParticles, SocketLocation, FRotator(0.0f), true);
+				bool bAngleCheck1 = UKismetMathLibrary::InRange_FloatFloat(DeltaRotator.Yaw, -180, -135);
+				bool bAngleCheck2 = UKismetMathLibrary::InRange_FloatFloat(DeltaRotator.Yaw, 135, 180);
 
-					}
-				}
-				if (Char->HitSound) {
-					UGameplayStatics::PlaySound2D(this, Char->HitSound);
-				}
-				if (DamageTypeClass) {
-					UGameplayStatics::ApplyDamage(Char, Damage, AIController, this, DamageTypeClass);
-				}
-			}
-		
-			else {
-				AMainShield* Shield = Cast<AMainShield>(OtherActor);
-				if (Shield) {
+				if(!(bAngleCheck1 || bAngleCheck2))
+				{
+					int32 Section = FMath::RandRange(0, 2);
 
-					UE_LOG(LogTemp, Warning, TEXT("SHIELD DETECTED"));
+					Char->BlockImpact(Section);
 					
-					UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-					if (AnimInstance && CombatMontage) {
-
-						AnimInstance->Montage_Play(CombatMontage, 2.0f);
-						AnimInstance->Montage_JumpToSection("Stunned", CombatMontage);
+					if(Char->EquippedShield->BlockSound)
+					{
+						UGameplayStatics::PlaySound2D(this, Char->EquippedShield->BlockSound);
 					}
+
+					if (Char->EquippedShield->HitParticles)
+					{
+							FVector SocketLocation = Char->EquippedShield->StaticMesh->GetSocketLocation(Char->EquippedShield->HitSocketName);
+							UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Char->EquippedShield->HitParticles, 
+																		SocketLocation, FRotator(0.0f), true);
+						
+					}
+
 				}
+				else
+				{
+					InflictDamageOnMain(Char, true);
+				}
+
+				
 			}
+			   //CHECK FOR SITUATION WHERE CHARACTER GETS HIT FROM BEHIND EVEN WHILE NOT BLOCKING
+			else{
+				InflictDamageOnMain(Char, false);
+			}
+		}
 	}
 }
 

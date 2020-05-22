@@ -3,7 +3,7 @@
 
 #include "Main.h"
 #include "Weapon.h"
-#include "MainShield.h"
+#include "Shield.h"
 #include "Enemy.h"
 #include "MainPlayerController.h"
 #include "GameSave.h"
@@ -360,14 +360,15 @@ void AMain::LMBDown()
 			Weapon->Equip(this);
 			SetActiveOverlappingItem(nullptr);
 		}
-	}
+		else{
+			AShield* Shield = Cast<AShield>(ActiveOverlappingItem);
+			if(Shield)
+			{
+				Shield->Equip(this);
+				SetActiveOverlappingItem(nullptr);
+			}
+		}
 
-	else if(ActiveOverlappingShield)
-	{
-			ActiveOverlappingShield->Equip(this);
-			SetActiveOverlappingShield(nullptr);
-		
-	
 	}
 
 	/** else if Player already has a weapon equipped AND
@@ -538,38 +539,66 @@ void AMain::BlockEnd()
 	//}
 }
 
-//NOT BEING USED
-void AMain::BlockImpact()
+void AMain::Impact(int32 Section)
 {
-	//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	//if (AnimInstance && CombatMontage) {
+	if (AnimInstance && CombatMontage) {
 
-	//	//Randomly choose between the 2 attack animations
-	//	int32 Section = FMath::RandRange(0, 2);
+		switch (Section) {
 
-	//	switch (Section) {
+		case 0:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("HitFromBehind"), CombatMontage);
+			break;
 
-	//	case 0:
-	//		AnimInstance->Montage_Play(CombatMontage, 2.0f);
-	//		AnimInstance->Montage_JumpToSection(FName("Impact_1"), CombatMontage);
-	//		break;
+		//case 1:
+		//	AnimInstance->Montage_Play(CombatMontage, 1.0f);
+		//	AnimInstance->Montage_JumpToSection(FName("Impact_2"), CombatMontage);
+		//	break;
 
-	//	case 1:
-	//		AnimInstance->Montage_Play(CombatMontage, 2.0f);
-	//		AnimInstance->Montage_JumpToSection(FName("Impact_2"), CombatMontage);
-	//		break;
+		//case 2:
+		//	AnimInstance->Montage_Play(CombatMontage, 1.0f);
+		//	AnimInstance->Montage_JumpToSection(FName("Impact_3"), CombatMontage);
+		//	break;
 
-	//	case 2:
-	//		AnimInstance->Montage_Play(CombatMontage, 2.0f);
-	//		AnimInstance->Montage_JumpToSection(FName("Impact_3"), CombatMontage);
-	//		break;
+		default:
+			break;
+		}
 
-	//	default:
-	//		break;
-	//	}
+	}
+}
 
-	//}
+
+void AMain::BlockImpact(int32 Section)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && CombatMontage) {
+
+		switch (Section) {
+
+		case 0:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("Impact_1"), CombatMontage);
+			break;
+
+		case 1:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("Impact_2"), CombatMontage);
+			break;
+
+		case 2:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("Impact_3"), CombatMontage);
+			break;
+
+		default:
+			break;
+		}
+
+	}
 }
 
 
@@ -632,7 +661,7 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet)
 	EquippedWeapon = WeaponToSet;
 }
 
-void AMain::SetEquippedShield(AMainShield* ShieldToSet)
+void AMain::SetEquippedShield(AShield* ShieldToSet)
 {
 	if (EquippedShield) {
 		EquippedShield->Destroy();
