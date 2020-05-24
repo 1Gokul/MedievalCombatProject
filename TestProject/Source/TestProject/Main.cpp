@@ -248,8 +248,8 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("RMB", IE_Pressed, this, &AMain::RMBDown);
 	PlayerInputComponent->BindAction("RMB", IE_Released, this, &AMain::RMBUp);
 
-	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &AMain::ESCDown);
-	PlayerInputComponent->BindAction("ESC", IE_Released, this, &AMain::ESCUp);
+	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &AMain::ESCDown).bExecuteWhenPaused = true;
+	PlayerInputComponent->BindAction("ESC", IE_Released, this, &AMain::ESCUp).bExecuteWhenPaused = true;
 
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
@@ -553,15 +553,20 @@ void AMain::Impact(int32 Section)
 			AnimInstance->Montage_JumpToSection(FName("HitFromBehind"), CombatMontage);
 			break;
 
-		//case 1:
-		//	AnimInstance->Montage_Play(CombatMontage, 1.0f);
-		//	AnimInstance->Montage_JumpToSection(FName("Impact_2"), CombatMontage);
-		//	break;
+		case 1:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("Hit_1"), CombatMontage);
+			break;
 
-		//case 2:
-		//	AnimInstance->Montage_Play(CombatMontage, 1.0f);
-		//	AnimInstance->Montage_JumpToSection(FName("Impact_3"), CombatMontage);
-		//	break;
+		case 2:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("Hit_2"), CombatMontage);
+			break;
+
+		case 3:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("Hit_3"), CombatMontage);
+			break;
 
 		default:
 			break;

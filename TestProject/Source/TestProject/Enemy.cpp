@@ -238,13 +238,17 @@ void AEnemy::MoveToTarget(AMain* Target)
 
 void AEnemy::InflictDamageOnMain(AMain* Char, bool bHitFromBehind)
 {
+	//If Character was hit from behind
 	if(bHitFromBehind)
 	{
 		 Char->Impact(0);
 	}
+
+	//If Character was hit while facing the attacking Enemy
 	else
 	{
-		
+		int32 Section = FMath::RandRange(1, 3);
+		Char->Impact(Section);
 	}
 	
 	if (Char->HitParticles)
@@ -255,7 +259,7 @@ void AEnemy::InflictDamageOnMain(AMain* Char, bool bHitFromBehind)
 		{
 			FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Char->HitParticles, SocketLocation,
-			                                         FRotator(0.0f), true);
+														FRotator(0.0f), true);
 		}
 	}
 	if (Char->HitSound)
@@ -276,52 +280,62 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 
 		if (Char)
 		{
+			//Check if the player is facing the Enemy
+			FVector MainLocation = Char->GetActorLocation();
+			FVector EnemyLocation = GetActorLocation();
+
+			FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(MainLocation, EnemyLocation);
+
+			FRotator MainRotation = Char->GetActorRotation();
+
+			FRotator DeltaRotator = UKismetMathLibrary::NormalizedDeltaRotator(MainRotation, LookAtRotation);
+
+			//Acceptable range of rotation = -135 - 135 degrees
+			bool bAngleCheck1 = UKismetMathLibrary::InRange_FloatFloat(DeltaRotator.Yaw, -180, -60);
+			bool bAngleCheck2 = UKismetMathLibrary::InRange_FloatFloat(DeltaRotator.Yaw, 60, 180);
+
 			if (Char->bBlocking)
 			{
-				FVector MainLocation = Char->GetActorLocation();
-				FVector EnemyLocation = GetActorLocation();
-
-				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(MainLocation, EnemyLocation);
-
-				FRotator MainRotation = Char->GetActorRotation();
-
-				FRotator DeltaRotator = UKismetMathLibrary::NormalizedDeltaRotator(MainRotation, LookAtRotation);
-				  
-				//UKismetMathLibrary::BreakRotator(DeltaRotator, DeltaRotatorYaw);
-
-				bool bAngleCheck1 = UKismetMathLibrary::InRange_FloatFloat(DeltaRotator.Yaw, -180, -135);
-				bool bAngleCheck2 = UKismetMathLibrary::InRange_FloatFloat(DeltaRotator.Yaw, 135, 180);
-
-				if(!(bAngleCheck1 || bAngleCheck2))
+				//If facing the Enemy
+				if (!(bAngleCheck1 || bAngleCheck2))
 				{
+					//Enemy stunned animation
+					//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+					//if (AnimInstance)
+					//{
+					//	AnimInstance->Montage_Play(CombatMontage, 1.35f);
+					//	AnimInstance->Montage_JumpToSection(FName("Stunned"), CombatMontage);
+					//}
+					
 					int32 Section = FMath::RandRange(0, 2);
 
+					//Character Block Impact Animation
 					Char->BlockImpact(Section);
-					
-					if(Char->EquippedShield->BlockSound)
+
+					if (Char->EquippedShield->BlockSound)
 					{
 						UGameplayStatics::PlaySound2D(this, Char->EquippedShield->BlockSound);
 					}
 
 					if (Char->EquippedShield->HitParticles)
 					{
-							FVector SocketLocation = Char->EquippedShield->StaticMesh->GetSocketLocation(Char->EquippedShield->HitSocketName);
-							UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Char->EquippedShield->HitParticles, 
-																		SocketLocation, FRotator(0.0f), true);
-						
+						FVector SocketLocation = Char->EquippedShield->StaticMesh->GetSocketLocation(
+							Char->EquippedShield->HitSocketName);
+						UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Char->EquippedShield->HitParticles,
+						                                         SocketLocation, FRotator(0.0f), true);
 					}
-
 				}
 				else
 				{
+					//If not facing the Enemy
 					InflictDamageOnMain(Char, true);
 				}
-
-				
 			}
-			   //CHECK FOR SITUATION WHERE CHARACTER GETS HIT FROM BEHIND EVEN WHILE NOT BLOCKING
-			else{
-				InflictDamageOnMain(Char, false);
+				
+			else
+			{	//If not blocking
+				InflictDamageOnMain(Char, (bAngleCheck1 || bAngleCheck2));
 			}
 		}
 	}
@@ -468,5 +482,6 @@ void AEnemy::Disappear()
 {
 	Destroy();
 }
+
 
 

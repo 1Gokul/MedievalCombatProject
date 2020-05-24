@@ -184,5 +184,7 @@ public:
 	bool Alive(); 
 
 	void Disappear();
+
+
 };
 	

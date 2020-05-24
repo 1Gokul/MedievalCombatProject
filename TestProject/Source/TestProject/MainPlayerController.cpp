@@ -3,6 +3,8 @@
 
 #include "MainPlayerController.h"
 #include "Blueprint/UserWidget.h"
+#include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 
 void AMainPlayerController::BeginPlay()
 {
@@ -83,6 +85,9 @@ void AMainPlayerController::DisplayPauseMenu_Implementation()
 {
 	if (PauseMenu) {
 		bPauseMenuVisible = true;
+
+		UGameplayStatics::SetGamePaused(GetWorld(), true);
+		
 		PauseMenu->SetVisibility(ESlateVisibility::Visible);
 
 		FInputModeGameAndUI InputModeGameAndUI;
@@ -95,6 +100,9 @@ void AMainPlayerController::DisplayPauseMenu_Implementation()
 void AMainPlayerController::RemovePauseMenu_Implementation()
 {
 	if (PauseMenu) {
+
+		UGameplayStatics::SetGamePaused(GetWorld(), false);
+
 		
 		GameModeOnly();
 		
