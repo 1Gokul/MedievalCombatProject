@@ -88,6 +88,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bAttacking;
 
+	/** Section Number of the Enemy's Anim Montage that will be played.
+		Used for determining what Reaction Section of the Character's Anim Montage will be played
+		if the character is hit. */
+	int32 AttackSection;
+
 	bool bHasValidTarget;
 
 	FTimerHandle AttackTimer;

@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "Main.generated.h"
 
+
+/** The Character's states of movement*/
 UENUM(BlueprintType)
 enum class EMovementStatus : uint8
 {
@@ -16,6 +18,7 @@ enum class EMovementStatus : uint8
 	EMS_MAX			UMETA(DisplayName = "DefaultMAX")
 };
 
+/** The Character's Stamina States. Used for reducing stamina when sprinting. */
 UENUM(BlueprintType)
 enum class EStaminaStatus : uint8
 {
@@ -36,18 +39,22 @@ public:
 	// Sets default values for this character's properties
 	AMain();
 
+	/** The Weapon that the Character is currently using */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
 	class AWeapon* EquippedWeapon;
 
+	/** The Shield that the Character is currently using */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
 		class AShield* EquippedShield;
 
+	/** Gets set to the current Item whose CollisionVolume is currently being overlapped by the Character. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
 	class AItem* ActiveOverlappingItem;
-
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
 		class AMainPlayerController* MainPlayerController;
 
+	/** Location of the current Combat Target */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 		FVector CombatTargetLocation;
 
@@ -58,9 +65,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
 	EStaminaStatus StaminaStatus;
 
+	/** Rate at which Stamina drains when the Character is sprinting. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float StaminaDrainRate;
 
+	/** Minimum amount of Stamina above which the Stamina Status can be set to ESS_Normal. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MinSprintStamina;
 
@@ -78,6 +87,8 @@ public:
 	bool bMovingForward;
 
 	bool bMovingRight;
+
+	bool bJumping;
 
 	/**Camera boom positioning the camera behind the player. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -251,7 +262,7 @@ public:
 
 	FORCEINLINE void SetHasCombatTarget(bool HasTarget) { bHasCombatTarget = HasTarget; }
 
-	/** Called if health of player becomes lesss than equal to zero */
+	/** Called if health of player becomes less than equal to zero */
 	void Die();
 
 	/** Called to increment coin count of player if they pick up a coin/coins */
@@ -295,4 +306,6 @@ public:
 	void LoadGame(bool SetPosition);
 
 	void LoadGameNoSwitch();
+
+	bool CanCheckStaminaStatus();
 };

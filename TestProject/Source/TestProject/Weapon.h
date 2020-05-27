@@ -57,6 +57,18 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 		AController* WeaponInstigator;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Sound")
+	USoundCue* BlockSound;
+
+	/** Particles emitted when the weapon gets hit */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Block")
+	class UParticleSystem* HitParticles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Block")
+		float BlockStaminaCost;
+
+	FName HitSocketName;
+
 protected:
 
 	virtual void BeginPlay() override;

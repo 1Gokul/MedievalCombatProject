@@ -15,7 +15,7 @@ AShield::AShield() {
 
 	ShieldState = EShieldState::ESS_Pickup;
 
-	BlockStaminaCost = 20.0f;
+	BlockStaminaCost = 30.0f;
 
 	HitSocketName = "ImpactSocket";
 

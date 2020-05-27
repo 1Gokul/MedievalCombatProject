@@ -78,6 +78,7 @@ AMain::AMain()
 	bHasCombatTarget = false;
 	bMovingForward = false;
 	bMovingRight = false;
+	bJumping = false;
 	bInterpToEnemy = false;
 
 	MovementStatus = EMovementStatus::EMS_Normal;
@@ -131,7 +132,7 @@ void AMain::Tick(float DeltaTime)
 
 	case EStaminaStatus::ESS_Normal:
 
-		if (bShiftKeyDown) {
+		if (CanCheckStaminaStatus()) {	//or blocking
 
 			if (Stamina - DeltaStamina <= MinSprintStamina) {
 				SetStaminaStatus(EStaminaStatus::ESS_BelowMinimum);
@@ -161,7 +162,7 @@ void AMain::Tick(float DeltaTime)
 
 	case EStaminaStatus::ESS_BelowMinimum:
 
-		if (bShiftKeyDown) {
+		if (CanCheckStaminaStatus()) {
 			if (Stamina - DeltaStamina <= 0.0f) {
 				SetStaminaStatus(EStaminaStatus::ESS_Exhausted);
 				Stamina = 0;
@@ -191,7 +192,7 @@ void AMain::Tick(float DeltaTime)
 
 	case EStaminaStatus::ESS_Exhausted:
 
-		if (bShiftKeyDown) {
+		if (CanCheckStaminaStatus()) {
 			Stamina = 0.0f;
 		}
 		else {
@@ -271,7 +272,7 @@ bool AMain::bCanMove(float Value)
 
 		return(
 			(Value != 0.0f)
-			&& (!bAttacking)			
+			&& (!bAttacking)
 			&& (MovementStatus != EMovementStatus::EMS_Dead)
 			&& (!MainPlayerController->bPauseMenuVisible)
 			);
@@ -401,17 +402,11 @@ void AMain::RMBDown()
 	/** else if Player already has a shield equipped AND
 	*	is not already attacking, perform a Block.
 	*/
-	if (EquippedShield && !bAttacking)
+	if ((EquippedShield || EquippedWeapon) && !bAttacking)
 	{
 		if (MovementStatus != EMovementStatus::EMS_Dead)
-		{
-			//Activate collision so that the MainShield can detect Overlaps.
-			//EquippedShield->ActivateCollision();
-			//
-			//Lower speed of walking
-			//GetCharacterMovement()->MaxWalkSpeed = BlockingWalkSpeed;
-			
-			if (!bBlocking)bBlocking = true;
+		{			
+			if (!bBlocking)bBlocking = true;			
 		}
 	}
 }
@@ -549,7 +544,7 @@ void AMain::Impact(int32 Section)
 		switch (Section) {
 
 		case 0:
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_Play(CombatMontage, 1.5f);
 			AnimInstance->Montage_JumpToSection(FName("HitFromBehind"), CombatMontage);
 			break;
 
@@ -559,12 +554,12 @@ void AMain::Impact(int32 Section)
 			break;
 
 		case 2:
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_Play(CombatMontage, 1.5f);
 			AnimInstance->Montage_JumpToSection(FName("Hit_2"), CombatMontage);
 			break;
 
 		case 3:
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_Play(CombatMontage, 1.5f);
 			AnimInstance->Montage_JumpToSection(FName("Hit_3"), CombatMontage);
 			break;
 
@@ -581,9 +576,8 @@ void AMain::BlockImpact(int32 Section)
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	if (AnimInstance && CombatMontage) {
-
-		switch (Section) {
-
+		switch (Section)
+		{
 		case 0:
 			AnimInstance->Montage_Play(CombatMontage, 1.0f);
 			AnimInstance->Montage_JumpToSection(FName("Impact_1"), CombatMontage);
@@ -598,6 +592,22 @@ void AMain::BlockImpact(int32 Section)
 			AnimInstance->Montage_Play(CombatMontage, 1.0f);
 			AnimInstance->Montage_JumpToSection(FName("Impact_3"), CombatMontage);
 			break;
+
+		case 3:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("Impact_4"), CombatMontage);
+			break;
+
+		case 4:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("Impact_5"), CombatMontage);
+			break;
+
+		case 5:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("Impact_6"), CombatMontage);
+			break;
+
 
 		default:
 			break;
@@ -733,6 +743,7 @@ void AMain::Jump()
 		Super::Jump();
 	}
 }
+
 
 void AMain::UpdateCombatTarget()
 {
@@ -906,4 +917,10 @@ void AMain::LoadGameNoSwitch()
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 	GetMesh()->bPauseAnims = false;
 	GetMesh()->bNoSkeletonUpdate = false;
+}
+
+bool AMain::CanCheckStaminaStatus()
+{
+	return((!GetMovementComponent()->IsFalling() && !bBlocking) && (bShiftKeyDown && (bMovingForward || bMovingRight)));
+	
 }

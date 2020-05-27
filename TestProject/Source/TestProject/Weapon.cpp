@@ -25,6 +25,9 @@ AWeapon::AWeapon()
 	WeaponState = EWeaponState::EWS_Pickup;
 
 	Damage = 25.0f;
+	BlockStaminaCost = 50.0f;
+
+	HitSocketName = "ImpactSocket";
 }
 
 void AWeapon::BeginPlay()
