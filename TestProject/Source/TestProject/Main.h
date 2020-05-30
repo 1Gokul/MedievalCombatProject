@@ -122,6 +122,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 		bool bAttacking;
 
+	/** Sections of the Combat Montage that will play when the Player attacks. */
+	int32 AttackComboSection;
+
+	/** If the Player Attacks multiple times within this time frame, they will perform Combo Attacks.
+	 *	Once this time is reached(3s), the attacks will reset back to normal.*/
+	const float AttackComboSectionResetTime = 2.0f;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 		bool bBlocking;
 
@@ -136,6 +143,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat ")
 		class USoundCue* HitSound;
 
+	/** Used to make the Player reset back to the first attack animation if a timer limit(3s) is reached. */
+	FTimerHandle AttackTimerHandle;
 	/**
 	*
 	*	Player Stats
@@ -221,6 +230,10 @@ public:
 	/** ESC: Escape Button*/
 	void ESCUp();
 	void ESCDown();
+	
+	void PlayAttack(int32 Section);
+
+	void ResetAttackComboSection();
 
 	void Attack();
 

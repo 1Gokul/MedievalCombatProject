@@ -69,6 +69,8 @@ public:
 
 	FName HitSocketName;
 
+	int32 MainAttackSection;
+
 protected:
 
 	virtual void BeginPlay() override;

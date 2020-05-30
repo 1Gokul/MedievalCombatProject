@@ -2,6 +2,9 @@
 
 
 #include "Main.h"
+
+#include <string>
+
 #include "Weapon.h"
 #include "Shield.h"
 #include "Enemy.h"
@@ -80,6 +83,8 @@ AMain::AMain()
 	bMovingRight = false;
 	bJumping = false;
 	bInterpToEnemy = false;
+
+	AttackComboSection = 0;
 
 	MovementStatus = EMovementStatus::EMS_Normal;
 	StaminaStatus = EStaminaStatus::ESS_Normal;
@@ -376,6 +381,7 @@ void AMain::LMBDown()
 	*	is not already blocking, perform an Attack.
 	*/
 	else if (EquippedWeapon && !bBlocking) {
+
 		Attack();
 	}
 }
@@ -425,36 +431,72 @@ void AMain::ESCDown()
 	}
 }
 
+void AMain::PlayAttack(int32 Section)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	//Attack Sections start from 1
+	Section += 1;
+	
+	if(Section > 0 && Section < 4){
+
+	if (AnimInstance && CombatMontage) {
+
+		EquippedWeapon->MainAttackSection = Section;
+
+		//Get a random Final Combo Attack (Ranges from Attack_3 to Attack_5)
+		if(Section == 3)Section += FMath::RandRange(0, 2);
+
+		//Append Section number
+		FString AttackName("Attack_");
+		AttackName.AppendInt(Section);
+
+		UE_LOG(LogTemp, Warning, TEXT("Attack = %s"), *AttackName)
+		
+		//Play Montage
+		AnimInstance->Montage_Play(CombatMontage, 1.0f);
+		AnimInstance->Montage_JumpToSection(*AttackName, CombatMontage);
+		
+	/*	switch (Section) {
+
+		case 0:
+			AnimInstance->Montage_Play(CombatMontage, 2.20f);
+			AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
+			break;
+
+		case 1:
+			AnimInstance->Montage_Play(CombatMontage, 1.80f);
+			AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
+			break;
+
+		case 2:
+			AnimInstance->Montage_Play(CombatMontage, 1.80f);
+			AnimInstance->Montage_JumpToSection(FName("Attack_3"), CombatMontage);
+			break;
+
+		default:
+			break;
+		} */
+
+	}
+	}
+}
+
+void AMain::ResetAttackComboSection()
+{
+	AttackComboSection = 0;
+}
+
 void AMain::Attack()
 {
 	if (!bAttacking && (MovementStatus != EMovementStatus::EMS_Dead)) {
+		
 		bAttacking = true;
+		
 		SetInterpToEnemy(true);
-
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-		if (AnimInstance && CombatMontage) {
-
-			//Randomly choose between the 2 attack animations
-			int32 Section = FMath::RandRange(0, 1);
-
-			switch (Section) {
-
-			case 0:
-				AnimInstance->Montage_Play(CombatMontage, 2.20f);
-				AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
-				break;
-
-			case 1:
-				AnimInstance->Montage_Play(CombatMontage, 1.80f);
-				AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
-				break;
-
-			default:
-				break;
-			}
-
-		}
+		
+				
+		PlayAttack((AttackComboSection++) % 3);
 
 	}
 
@@ -465,8 +507,12 @@ void AMain::AttackEnd()
 	bAttacking = false;
 	SetInterpToEnemy(false);
 
+	GetWorldTimerManager().SetTimer(AttackTimerHandle, this, &AMain::ResetAttackComboSection,
+	                                AttackComboSectionResetTime);
 	//If Player is still holding LMBDown, attack again.
-	if (bLMBDown) {
+	if (bLMBDown)
+	{	
+		GetWorldTimerManager().ClearTimer(AttackTimerHandle);
 		Attack();
 	}
 }

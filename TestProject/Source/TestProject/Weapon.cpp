@@ -75,6 +75,9 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 		
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		if (Enemy) {
+
+			//Play Enemy Impact Animation
+			Enemy->Impact(MainAttackSection);
 			
 			if (Enemy->HitParticles) {
 

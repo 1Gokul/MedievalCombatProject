@@ -190,6 +190,9 @@ public:
 
 	void Disappear();
 
+	//Play Animation when hit
+	void Impact(int32 Section);
+
 
 };
 	

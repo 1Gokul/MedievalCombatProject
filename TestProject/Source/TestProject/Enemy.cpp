@@ -229,7 +229,7 @@ void AEnemy::MoveToTarget(AMain* Target)
 	{
 		FAIMoveRequest MoveRequest;
 		MoveRequest.SetGoalActor(Target);
-		MoveRequest.SetAcceptanceRadius(75.0f);
+		MoveRequest.SetAcceptanceRadius(15.0f);
 
 		FNavPathSharedPtr NavPath;
 
@@ -283,6 +283,8 @@ void AEnemy::InflictDamageOnMain(AMain* Char, bool bHitFromBehind)
 
 	//In case the Player's attack was interrupted
 	Char->bAttacking = false;
+
+	Char->bInterpToEnemy = false;
 }
 
 void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -314,14 +316,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 				//If facing the Enemy
 				if (!(bAngleCheck1 || bAngleCheck2))
 				{
-					//Enemy stunned animation
-					//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-					//if (AnimInstance)
-					//{
-					//	AnimInstance->Montage_Play(CombatMontage, 1.35f);
-					//	AnimInstance->Montage_JumpToSection(FName("Stunned"), CombatMontage);
-					//}
+					
 					
 					//If Player is blocking with shield and has enough stamina to successfully block an attack  
 					if (Char->EquippedShield && Char->Stamina - Char->EquippedShield->BlockStaminaCost >= 0)
@@ -462,7 +457,7 @@ void AEnemy::Attack()
 				switch (AttackSection)
 				{
 				case 0:
-					AnimInstance->Montage_Play(CombatMontage, 2.20f);
+					AnimInstance->Montage_Play(CombatMontage, 1.80f);
 					AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
 					CurrentAttackTipSocket = Attack1_TipSocket;
 					break;
@@ -474,7 +469,7 @@ void AEnemy::Attack()
 					break;
 
 				case 2:
-					AnimInstance->Montage_Play(CombatMontage, 1.80f);
+					AnimInstance->Montage_Play(CombatMontage, 1.20f);
 					AnimInstance->Montage_JumpToSection(FName("Attack_3"), CombatMontage);
 					CurrentAttackTipSocket = Attack2_TipSocket;
 					break;
@@ -559,6 +554,41 @@ bool AEnemy::Alive()
 void AEnemy::Disappear()
 {
 	Destroy();
+}
+
+void AEnemy::Impact(int32 Section)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && CombatMontage) {
+
+		switch (Section) {
+
+		case 0:
+			AnimInstance->Montage_Play(CombatMontage, 1.5f);
+			AnimInstance->Montage_JumpToSection(FName("HitLeft"), CombatMontage);
+			break;
+
+		case 1:
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(FName("HitRight"), CombatMontage);
+			break;
+
+		case 2:
+			AnimInstance->Montage_Play(CombatMontage, 1.5f);
+			AnimInstance->Montage_JumpToSection(FName("HitFront"), CombatMontage);
+			break;
+
+		case 3:
+			AnimInstance->Montage_Play(CombatMontage, 1.5f);
+			AnimInstance->Montage_JumpToSection(FName("HitRear"), CombatMontage);
+			break;
+
+		default:
+			break;
+		}
+
+	} 
 }
 
 
