@@ -229,7 +229,7 @@ void AEnemy::MoveToTarget(AMain* Target)
 	{
 		FAIMoveRequest MoveRequest;
 		MoveRequest.SetGoalActor(Target);
-		MoveRequest.SetAcceptanceRadius(15.0f);
+		MoveRequest.SetAcceptanceRadius(50.0f);
 
 		FNavPathSharedPtr NavPath;
 

@@ -76,6 +76,8 @@ AMain::AMain()
 	bShiftKeyDown = false;
 	bLMBDown = false;
 	bRMBDown = false;
+	bFKeyDown = false;
+	bInCombatMode = false;
 	bAttacking = false;
 	bBlocking = false;
 	bHasCombatTarget = false;
@@ -85,6 +87,7 @@ AMain::AMain()
 	bInterpToEnemy = false;
 
 	AttackComboSection = 0;
+	SwingSoundIndex = 0;
 
 	MovementStatus = EMovementStatus::EMS_Normal;
 	StaminaStatus = EStaminaStatus::ESS_Normal;
@@ -223,13 +226,13 @@ void AMain::Tick(float DeltaTime)
 		break;
 	}
 
-	if (bInterpToEnemy && CombatTarget) {
-		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
-		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
+	//if (bInterpToEnemy && CombatTarget) {
+	//	FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
+	//	FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
 
-		//Rotate to be directly facing the current Combat Target.
-		SetActorRotation(InterpRotation);
-	}
+	//	//Rotate to be directly facing the current Combat Target.
+	//	SetActorRotation(InterpRotation);
+	//}
 
 	if (CombatTarget) {
 		CombatTargetLocation = CombatTarget->GetActorLocation();
@@ -269,6 +272,9 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAxis("TurnRate", this, &AMain::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AMain::LookUpAtRate);
 
+	PlayerInputComponent->BindAction("CombatMode", IE_Pressed, this, &AMain::FKeyDown);
+	PlayerInputComponent->BindAction("CombatMode", IE_Released, this, &AMain::FKeyUp);
+
 }
 
 bool AMain::bCanMove(float Value)
@@ -277,7 +283,7 @@ bool AMain::bCanMove(float Value)
 
 		return(
 			(Value != 0.0f)
-			&& (!bAttacking)
+			//&& (!bAttacking)
 			&& (MovementStatus != EMovementStatus::EMS_Dead)
 			&& (!MainPlayerController->bPauseMenuVisible)
 			);
@@ -431,10 +437,24 @@ void AMain::ESCDown()
 	}
 }
 
+void AMain::FKeyUp()
+{
+	bFKeyDown = false;
+}
+
+void AMain::FKeyDown()
+{
+	bFKeyDown = true;
+
+	bInCombatMode = !bInCombatMode;
+}
+
+
 void AMain::PlayAttack(int32 Section)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
+	
 	//Attack Sections start from 1
 	Section += 1;
 	
@@ -507,6 +527,10 @@ void AMain::AttackEnd()
 	bAttacking = false;
 	SetInterpToEnemy(false);
 
+	//Reset Swing Sound index
+	SwingSoundIndex = 0;
+
+	//Reset Combo Attack Section if Player does not press LMB within AttackComboSectionResetTime.
 	GetWorldTimerManager().SetTimer(AttackTimerHandle, this, &AMain::ResetAttackComboSection,
 	                                AttackComboSectionResetTime);
 	//If Player is still holding LMBDown, attack again.
@@ -743,8 +767,12 @@ void AMain::ShiftKeyUp()
 
 void AMain::PlaySwingSound()
 {
-	if (EquippedWeapon->SwingSound) {
-		UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSound);
+	//Each weapon has specefic Swing Sounds depending on the current Attack number.
+	if(SwingSoundIndex < EquippedWeapon->SwingSounds.Num()){
+		if (EquippedWeapon->SwingSounds[SwingSoundIndex]) {
+			UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSounds[SwingSoundIndex]);
+			++SwingSoundIndex;
+		}
 	}
 }
 

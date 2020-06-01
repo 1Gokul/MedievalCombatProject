@@ -83,9 +83,10 @@ public:
 
 	/** Player Movement*/
 
-	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bMovingForward;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bMovingRight;
 
 	bool bJumping;
@@ -119,11 +120,23 @@ public:
 	/** ESC: Escape Button*/
 	bool bESCDown;
 
+	/** F: F Button*/
+	bool bFKeyDown;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 		bool bAttacking;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
+	bool bInCombatMode;
+
 	/** Sections of the Combat Montage that will play when the Player attacks. */
 	int32 AttackComboSection;
+
+	/** The SwingSounds TArray Index that will increase as the number of swings increases.
+	 * This will help emit different sounds for each swing of the Combo Attacks.
+	 * Gets reset every time AttackEnd gets called and increments each time PlaySwingSound gets called.
+	 */
+	int32 SwingSoundIndex;
 
 	/** If the Player Attacks multiple times within this time frame, they will perform Combo Attacks.
 	 *	Once this time is reached(3s), the attacks will reset back to normal.*/
@@ -230,6 +243,10 @@ public:
 	/** ESC: Escape Button*/
 	void ESCUp();
 	void ESCDown();
+
+	/** F: F Button*/
+	void FKeyUp();
+	void FKeyDown();
 	
 	void PlayAttack(int32 Section);
 
@@ -322,3 +339,4 @@ public:
 
 	bool CanCheckStaminaStatus();
 };
+

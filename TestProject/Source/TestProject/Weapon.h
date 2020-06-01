@@ -40,7 +40,7 @@ public:
 		class USoundCue* OnEquipSound;	
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Sound")
-		USoundCue* SwingSound;
+	TArray<USoundCue*>SwingSounds;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skeletal Mesh")
 	class USkeletalMeshComponent* SkeletalMesh;
