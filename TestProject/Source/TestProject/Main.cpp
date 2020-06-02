@@ -70,8 +70,8 @@ AMain::AMain()
 	RunningSpeed = 600.0f;
 	SprintingSpeed = 850.0f;
 
-	NormalWalkSpeed = 600.0f;
-	BlockingWalkSpeed = 150.0f;
+	CombatMaxWalkSpeed = 450.0f;
+	BlockingMaxWalkSpeed = 150.0f;
 
 	bShiftKeyDown = false;
 	bLMBDown = false;
@@ -85,6 +85,7 @@ AMain::AMain()
 	bMovingRight = false;
 	bJumping = false;
 	bInterpToEnemy = false;
+	bIsWeaponEquipped = false;
 
 	AttackComboSection = 0;
 	SwingSoundIndex = 0;
@@ -386,7 +387,7 @@ void AMain::LMBDown()
 	/** else if Player already has a weapon equipped AND
 	*	is not already blocking, perform an Attack.
 	*/
-	else if (EquippedWeapon && !bBlocking) {
+	else if (bInCombatMode && !bBlocking) {
 
 		Attack();
 	}
@@ -414,7 +415,7 @@ void AMain::RMBDown()
 	/** else if Player already has a shield equipped AND
 	*	is not already attacking, perform a Block.
 	*/
-	if ((EquippedShield || EquippedWeapon) && !bAttacking)
+	if (bInCombatMode && !bAttacking)
 	{
 		if (MovementStatus != EMovementStatus::EMS_Dead)
 		{			
@@ -446,7 +447,50 @@ void AMain::FKeyDown()
 {
 	bFKeyDown = true;
 
-	bInCombatMode = !bInCombatMode;
+	/** If already in Combat Mode, switch back to Normal Mode and Sheathe the Weapon, if equipped. */
+	if(bInCombatMode)
+	{
+		bInCombatMode = false;
+
+		if(bIsWeaponEquipped && CurrentWeapon) 		{
+			
+			bIsWeaponEquipped = false;
+			
+			//Play the Unsheath Animation
+			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+			if (AnimInstance && CombatMontage) {
+
+				AnimInstance->Montage_Play(CombatMontage, 1.0f);
+				AnimInstance->Montage_JumpToSection(FName("SheathWeapon"), CombatMontage);
+
+			}  			
+			
+		}
+	}
+
+	/** If in Normal Mode, switch to Combat Mode and draw the Weapon, if it exists.*/
+	else
+	{
+		bInCombatMode = true;
+		
+		if(!bIsWeaponEquipped && CurrentWeapon)
+		{
+			bIsWeaponEquipped = true;
+			
+			//Play the Sheath Animation
+			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+			if (AnimInstance && CombatMontage) {
+
+				AnimInstance->Montage_Play(CombatMontage, 1.0f);
+				AnimInstance->Montage_JumpToSection(FName("DrawWeapon"), CombatMontage);
+
+			}
+			
+			
+		}
+	}
 }
 
 
@@ -462,16 +506,24 @@ void AMain::PlayAttack(int32 Section)
 
 	if (AnimInstance && CombatMontage) {
 
-		EquippedWeapon->MainAttackSection = Section;
+		if(CurrentWeapon)CurrentWeapon->MainAttackSection = Section;
 
 		//Get a random Final Combo Attack (Ranges from Attack_3 to Attack_5)
 		if(Section == 3)Section += FMath::RandRange(0, 2);
 
+		FString AttackName;
+		
 		//Append Section number
-		FString AttackName("Attack_");
+
+			//If Weapon attack
+			if(bIsWeaponEquipped)AttackName.Append("Attack_");
+
+			//else if melee attack
+			else AttackName.Append("MeleeAttack_");
+		
 		AttackName.AppendInt(Section);
 
-		UE_LOG(LogTemp, Warning, TEXT("Attack = %s"), *AttackName)
+		UE_LOG(LogTemp, Warning, TEXT("Attack = %s"), *AttackName);
 		
 		//Play Montage
 		AnimInstance->Montage_Play(CombatMontage, 1.0f);
@@ -558,15 +610,15 @@ void AMain::Block()
 		//if (!bBlocking) {
 		//	bBlocking = true;
 
-		//	//Play the "Going To Block" Animation
-		//	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+			////Play the "Going To Block" Animation
+			//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-		//	if (AnimInstance && CombatMontage) {
+			//if (AnimInstance && CombatMontage) {
 
-		//		AnimInstance->Montage_Play(CombatMontage, 1.0f);
-		//		AnimInstance->Montage_JumpToSection(FName("BlockStart"), CombatMontage);
+			//	AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			//	AnimInstance->Montage_JumpToSection(FName("BlockStart"), CombatMontage);
 
-		//	}
+			//}
 		//}
 		////If already blocking,
 		//else{
@@ -727,9 +779,13 @@ void AMain::SetMovementStatus(EMovementStatus Status)
 	if (MovementStatus == EMovementStatus::EMS_Sprinting) {
 		GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
 	}
+	else if(bInCombatMode)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = CombatMaxWalkSpeed;
+	}
 	else if(bBlocking)
 	{
-		GetCharacterMovement()->MaxWalkSpeed = BlockingWalkSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = BlockingMaxWalkSpeed;
 	}
 	
 	else{
@@ -737,14 +793,15 @@ void AMain::SetMovementStatus(EMovementStatus Status)
 	}
 }
 
-void AMain::SetEquippedWeapon(AWeapon* WeaponToSet)
+void AMain::SetCurrentWeapon(AWeapon* WeaponToSet)
 {
-	if (EquippedWeapon) {
-		EquippedWeapon->Destroy();
+	if (CurrentWeapon) {
+		CurrentWeapon->Destroy();
 	}
 
-	EquippedWeapon = WeaponToSet;
+	CurrentWeapon = WeaponToSet;
 }
+
 
 void AMain::SetEquippedShield(AShield* ShieldToSet)
 {
@@ -768,9 +825,9 @@ void AMain::ShiftKeyUp()
 void AMain::PlaySwingSound()
 {
 	//Each weapon has specefic Swing Sounds depending on the current Attack number.
-	if(SwingSoundIndex < EquippedWeapon->SwingSounds.Num()){
-		if (EquippedWeapon->SwingSounds[SwingSoundIndex]) {
-			UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSounds[SwingSoundIndex]);
+	if(SwingSoundIndex < CurrentWeapon->SwingSounds.Num()){
+		if (CurrentWeapon->SwingSounds[SwingSoundIndex]) {
+			UGameplayStatics::PlaySound2D(this, CurrentWeapon->SwingSounds[SwingSoundIndex]);
 			++SwingSoundIndex;
 		}
 	}
@@ -885,8 +942,8 @@ void AMain::SaveGame()
 	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
 	SaveGameInstance->CharacterStats.Coins = Coins;
 
-	if (EquippedWeapon) {
-		SaveGameInstance->CharacterStats.WeaponName = EquippedWeapon->Name;
+	if (CurrentWeapon) {
+		SaveGameInstance->CharacterStats.WeaponName = CurrentWeapon->Name;
 	}
 
 	FString MapName = GetWorld()->GetMapName();

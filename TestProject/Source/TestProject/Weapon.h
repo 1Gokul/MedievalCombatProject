@@ -37,7 +37,10 @@ public:
 		bool bWeaponParticles;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Sound")
-		class USoundCue* OnEquipSound;	
+		class USoundCue* OnEquipSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Sound")
+	USoundCue* OnSheathSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Sound")
 	TArray<USoundCue*>SwingSounds;
@@ -102,6 +105,12 @@ public:
 	void DeactivateCollision();
 
 	void Equip(class AMain* Char);
+
+	UFUNCTION(BlueprintCallable)
+	void Sheath(AMain* Char);
+
+	UFUNCTION(BlueprintCallable)
+	void Unsheathe(AMain* Char);
 	
 	FORCEINLINE void SetWeaponState(EWeaponState State) { WeaponState = State; }
 	FORCEINLINE EWeaponState GetWeaponState() { return WeaponState; }

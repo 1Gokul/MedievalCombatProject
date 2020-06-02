@@ -343,7 +343,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 					}
 
 					//If Player is blocking with weapon and has enough stamina to successfully block an attack
-					else if (Char->EquippedWeapon && Char->Stamina - Char->EquippedWeapon->BlockStaminaCost >= 0)
+					else if (Char->CurrentWeapon && Char->Stamina - Char->CurrentWeapon->BlockStaminaCost >= 0)
 					{
 						//Weapons don't block attacks completely
 						if (DamageTypeClass)
@@ -352,28 +352,28 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 							                              DamageTypeClass);
 						}
 
-						Char->Stamina -= Char->EquippedWeapon->BlockStaminaCost;
+						Char->Stamina -= Char->CurrentWeapon->BlockStaminaCost;
 
 						int32 Section = FMath::RandRange(3, 5);
 
 						//Character Weapon Block Impact Animation
 						Char->BlockImpact(Section);  // +3 because first 3 attack sections are for shield blocking
 
-						if (Char->EquippedWeapon->BlockSound)
+						if (Char->CurrentWeapon->BlockSound)
 						{
-							UGameplayStatics::PlaySound2D(this, Char->EquippedWeapon->BlockSound);
+							UGameplayStatics::PlaySound2D(this, Char->CurrentWeapon->BlockSound);
 						}
 
-						if (Char->EquippedWeapon->HitParticles)
+						if (Char->CurrentWeapon->HitParticles)
 						{
 							const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(
-								Char->EquippedWeapon->HitSocketName);
+								Char->CurrentWeapon->HitSocketName);
 
 							if (TipSocket)
 							{
 								FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
 								UGameplayStatics::SpawnEmitterAtLocation(
-									GetWorld(), Char->EquippedWeapon->HitParticles, SocketLocation,
+									GetWorld(), Char->CurrentWeapon->HitParticles, SocketLocation,
 									FRotator(0.0f), true);
 							}
 						}

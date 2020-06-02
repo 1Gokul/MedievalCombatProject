@@ -59,6 +59,9 @@ void AShield::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 void AShield::Equip(AMain* Char)
 {
 	if (Char) {
+
+		Char->bInCombatMode = true;
+		
 		SetInstigator(Char->GetController());
 		StaticMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 		StaticMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);

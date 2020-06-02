@@ -41,7 +41,11 @@ public:
 
 	/** The Weapon that the Character is currently using */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
-	class AWeapon* EquippedWeapon;
+	class AWeapon* CurrentWeapon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
+	bool bIsWeaponEquipped;
+	
 
 	/** The Shield that the Character is currently using */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
@@ -79,6 +83,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	float SprintingSpeed;
 
+	float CombatMaxWalkSpeed;
+	
+	float BlockingMaxWalkSpeed;
+
 	bool bShiftKeyDown;
 
 	/** Player Movement*/
@@ -105,10 +113,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 		float BaseLookUpRate;
-
-	float NormalWalkSpeed;
-	
-	float BlockingWalkSpeed;
 	
 
 	/** LMB: Left Mouse Button*/
@@ -140,7 +144,7 @@ public:
 
 	/** If the Player Attacks multiple times within this time frame, they will perform Combo Attacks.
 	 *	Once this time is reached(3s), the attacks will reset back to normal.*/
-	const float AttackComboSectionResetTime = 2.0f;
+	const float AttackComboSectionResetTime = 1.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 		bool bBlocking;
@@ -282,7 +286,7 @@ public:
 
 	FORCEINLINE void SetStaminaStatus(EStaminaStatus Status) { StaminaStatus = Status; }
 
-	void SetEquippedWeapon(AWeapon* WeaponToSet);
+	void SetCurrentWeapon(AWeapon* WeaponToSet);
 
 	void SetEquippedShield(AShield* ShieldToSet);
 

@@ -127,6 +127,9 @@ void AWeapon::DeactivateCollision()
 void AWeapon::Equip(AMain* Char)
 {
 	if (Char) {
+
+		Char->bInCombatMode = true;
+		
 		SetInstigator(Char->GetController());
 		SkeletalMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 		SkeletalMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
@@ -138,7 +141,8 @@ void AWeapon::Equip(AMain* Char)
 		if (RightHandSocket) {
 			RightHandSocket->AttachActor(this, Char->GetMesh());
 			bShouldRotate = false;
-			Char->SetEquippedWeapon(this);
+			Char->SetCurrentWeapon(this);
+			Char->bIsWeaponEquipped = true;
 			Char->SetActiveOverlappingItem(nullptr);
 		}
 
@@ -148,6 +152,39 @@ void AWeapon::Equip(AMain* Char)
 		
 		if (!bWeaponParticles) {
 			IdleParticlesComponent->Deactivate();
+		}
+	}
+}
+
+void AWeapon::Sheath(AMain* Char)
+{
+	if (Char) {
+		SetInstigator(NULL);
+		const USkeletalMeshSocket* LeftThighSocket = Char->GetMesh()->GetSocketByName("LeftThighSocket");
+
+		if (LeftThighSocket) {
+			LeftThighSocket->AttachActor(this, Char->GetMesh());
+		}
+
+		if (OnSheathSound) {
+			UGameplayStatics::PlaySound2D(this, OnSheathSound);
+		}
+	}
+}
+
+void AWeapon::Unsheathe(AMain* Char)
+{
+	if (Char) {
+		SetInstigator(NULL);
+		
+		const USkeletalMeshSocket* RightHandSocket = Char->GetMesh()->GetSocketByName("RightHandSocket");
+
+		if (RightHandSocket) {
+			RightHandSocket->AttachActor(this, Char->GetMesh());
+		}
+
+		if (OnEquipSound) {
+			UGameplayStatics::PlaySound2D(this, OnEquipSound);
 		}
 	}
 }
