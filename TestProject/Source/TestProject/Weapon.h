@@ -74,6 +74,21 @@ public:
 
 	int32 MainAttackSection;
 
+	/**If true, the Player will treat the weapon as two handed.
+	 * No Shield can be equipped if the CurrentWeapon is Two-Handed.
+	 * Weapon Blocking is possible only when the CurrentWeapon is Two-Handed.
+	 * Animations and Blendspaces will be changed also.
+	 * Will be set in the Weapon's Blueprint.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | TwoHanded")
+	bool bIsTwoHanded;
+
+	//Name of the socket the weapon will get attached to when sheathed
+	FName SheathSocketName;
+
+	//Name of the socket the weapon will get attached to when drawn
+	FName HandSocketName;
+
 protected:
 
 	virtual void BeginPlay() override;

@@ -95,6 +95,10 @@ public:
 
 	bool bHasValidTarget;
 
+	bool bInterpToEnemy;
+
+	float InterpSpeed;
+
 	FTimerHandle AttackTimer;
 
 
@@ -172,6 +176,15 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void DeactivateCollisionRight();
+
+	/** Takes the location of the target and returns how 
+	*	much the player has to rotate to orient it to the target. */
+	FRotator GetLookAtRotationYaw(FVector Target);
+
+	/** Set bInterpToEnemy
+	*	@param Interp true or false depending on proximity to the Enemy
+	*/
+	void SetInterpToEnemy(bool Interp);
 
 	void Attack();
 

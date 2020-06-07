@@ -60,6 +60,9 @@ AEnemy::AEnemy()
 	Attack2_TipSocket = FName("LeftTipSocket");
 
 	AttackSection = -1;
+
+	bInterpToEnemy = false;
+	InterpSpeed = 15.0f;
 }
 
 // Called when the game starts or when spawned
@@ -99,6 +102,14 @@ void AEnemy::BeginPlay()
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (bInterpToEnemy && CombatTarget) {
+		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
+		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
+
+		//Rotate to be directly facing the current Combat Target.
+		SetActorRotation(InterpRotation);
+	}
 }
 
 // Called to bind functionality to input
@@ -258,7 +269,7 @@ void AEnemy::InflictDamageOnMain(AMain* Char, bool bHitFromBehind)
 	else
 	{
 		//int32 Section = FMath::RandRange(1, 3);
-		Char->Impact(AttackSection + 1); // +1 as above HitFromBehind animation is 0
+		Char->Impact(AttackSection + 1);
 	}
 
 	if (Char->HitParticles)
@@ -343,7 +354,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 					}
 
 					//If Player is blocking with weapon and has enough stamina to successfully block an attack
-					else if (Char->CurrentWeapon && Char->Stamina - Char->CurrentWeapon->BlockStaminaCost >= 0)
+					else if (Char->bIsWeaponEquipped && Char->Stamina - Char->CurrentWeapon->BlockStaminaCost >= 0)
 					{
 						//Weapons don't block attacks completely
 						if (DamageTypeClass)
@@ -382,7 +393,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 					//If Player does not have enough stamina to successfully block an attack
 					else
 					{
-						InflictDamageOnMain(Char, true);
+						InflictDamageOnMain(Char, false);
 					}
 				}
 				else
@@ -435,6 +446,18 @@ void AEnemy::DeactivateCollisionRight()
 	RightCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
+FRotator AEnemy::GetLookAtRotationYaw(FVector Target)
+{
+	FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target);
+	FRotator LookAtRotationYaw(0.0f, LookAtRotation.Yaw, 0.0f);
+	return LookAtRotationYaw;
+}
+
+void AEnemy::SetInterpToEnemy(bool Interp) {
+
+	bInterpToEnemy = Interp;
+}
+
 void AEnemy::Attack()
 {
 	if (Alive() && bHasValidTarget)
@@ -446,6 +469,8 @@ void AEnemy::Attack()
 		}
 		if (!bAttacking)
 		{
+			SetInterpToEnemy(true);
+			
 			bAttacking = true;
 			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -457,19 +482,19 @@ void AEnemy::Attack()
 				switch (AttackSection)
 				{
 				case 0:
-					AnimInstance->Montage_Play(CombatMontage, 1.80f);
+					AnimInstance->Montage_Play(CombatMontage, 1.0f);
 					AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
 					CurrentAttackTipSocket = Attack1_TipSocket;
 					break;
 
 				case 1:
-					AnimInstance->Montage_Play(CombatMontage, 1.80f);
+					AnimInstance->Montage_Play(CombatMontage, 1.0f);
 					AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
 					CurrentAttackTipSocket = Attack2_TipSocket;
 					break;
 
 				case 2:
-					AnimInstance->Montage_Play(CombatMontage, 1.20f);
+					AnimInstance->Montage_Play(CombatMontage, 1.0f);
 					AnimInstance->Montage_JumpToSection(FName("Attack_3"), CombatMontage);
 					CurrentAttackTipSocket = Attack2_TipSocket;
 					break;
@@ -485,6 +510,7 @@ void AEnemy::Attack()
 void AEnemy::AttackEnd()
 {
 	bAttacking = false;
+	SetInterpToEnemy(false);
 	if (bOverlappingCombatSphere)
 	{
 		float AttackTime = FMath::FRandRange(MinAttackTime, MaxAttackTime);

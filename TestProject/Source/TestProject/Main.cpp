@@ -3,7 +3,7 @@
 
 #include "Main.h"
 
-#include <string>
+
 
 #include "Weapon.h"
 #include "Shield.h"
@@ -11,6 +11,7 @@
 #include "MainPlayerController.h"
 #include "GameSave.h"
 #include "ItemStorage.h"
+#include "MainAnimInstance.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -24,6 +25,7 @@
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimInstance.h"
 #include "Sound/SoundCue.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 
 // Sets default values
@@ -71,7 +73,10 @@ AMain::AMain()
 	SprintingSpeed = 850.0f;
 
 	CombatMaxWalkSpeed = 450.0f;
+	CombatSprintingSpeed = 700.0f;
 	BlockingMaxWalkSpeed = 150.0f;
+
+	OverlappingWeaponLocation = FVector(0.0,0.0,0.0);
 
 	bShiftKeyDown = false;
 	bLMBDown = false;
@@ -85,6 +90,7 @@ AMain::AMain()
 	bMovingRight = false;
 	bJumping = false;
 	bInterpToEnemy = false;
+	
 	bIsWeaponEquipped = false;
 
 	AttackComboSection = 0;
@@ -97,6 +103,8 @@ AMain::AMain()
 	MinSprintStamina = 50.0f;
 
 	InterpSpeed = 15.0f;
+
+	AttackMovementValue = 100.0f;
 	
 }
 
@@ -111,7 +119,7 @@ void AMain::BeginPlay()
 	MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
 
 	//If the level is not the first level,
-	if (MapName != "SunTemple") {
+	if (MapName != "TestMap") {
 
 		//Load all items of player after level transition
 		LoadGameNoSwitch();
@@ -227,13 +235,13 @@ void AMain::Tick(float DeltaTime)
 		break;
 	}
 
-	//if (bInterpToEnemy && CombatTarget) {
-	//	FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
-	//	FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
+	if (bInterpToEnemy && CombatTarget) {
+		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
+		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
 
-	//	//Rotate to be directly facing the current Combat Target.
-	//	SetActorRotation(InterpRotation);
-	//}
+		//Rotate to be directly facing the current Combat Target.
+		SetActorRotation(InterpRotation);
+	}
 
 	if (CombatTarget) {
 		CombatTargetLocation = CombatTarget->GetActorLocation();
@@ -284,7 +292,7 @@ bool AMain::bCanMove(float Value)
 
 		return(
 			(Value != 0.0f)
-			//&& (!bAttacking)
+			&& (!bAttacking)
 			&& (MovementStatus != EMovementStatus::EMS_Dead)
 			&& (!MainPlayerController->bPauseMenuVisible)
 			);
@@ -364,14 +372,31 @@ void AMain::LMBDown()
 		if (MainPlayerController->bPauseMenuVisible)return;
 	}
 
+	
+	
 	//If Player is overlapping with an Item, they can equip it 
 	if (ActiveOverlappingItem) {
 
 		//If the Item is a Weapon
 		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
 		if (Weapon) {
-			Weapon->Equip(this);
-			SetActiveOverlappingItem(nullptr);
+			if (CurrentWeapon)
+			{
+				if (bIsWeaponEquipped)
+				{
+					OverlappingWeaponLocation = Weapon->GetActorLocation();
+
+					Weapon->Equip(this);
+					SetActiveOverlappingItem(nullptr);
+				}
+			}
+			else
+			{
+				OverlappingWeaponLocation = Weapon->GetActorLocation();
+
+				Weapon->Equip(this);
+				SetActiveOverlappingItem(nullptr);
+			}
 		}
 		else{
 			AShield* Shield = Cast<AShield>(ActiveOverlappingItem);
@@ -387,9 +412,18 @@ void AMain::LMBDown()
 	/** else if Player already has a weapon equipped AND
 	*	is not already blocking, perform an Attack.
 	*/
-	else if (bInCombatMode && !bBlocking) {
-
-		Attack();
+	else if (!bBlocking)
+	{
+		UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+		if (MainAnimInstance)
+		{
+			//If Player is not currently falling
+			if (!MainAnimInstance->bIsInAir)
+			{
+				if (bInCombatMode)MeleeAttack();
+				else DrawWeapon();
+			}
+		}
 	}
 }
 
@@ -411,16 +445,31 @@ void AMain::RMBDown()
 	if (MainPlayerController) {
 		if (MainPlayerController->bPauseMenuVisible)return;
 	}
-
+	
 	/** else if Player already has a shield equipped AND
 	*	is not already attacking, perform a Block.
 	*/
-	if (bInCombatMode && !bAttacking)
+	if (bInCombatMode && !bAttacking && MovementStatus != EMovementStatus::EMS_Dead )
 	{
-		if (MovementStatus != EMovementStatus::EMS_Dead)
-		{			
-			if (!bBlocking)bBlocking = true;			
+		//Blocking with a Weapon should only be allowed if the weapon is Two-Handed.
+		if (CurrentWeapon && !EquippedShield)
+		{
+			if (CurrentWeapon->bIsTwoHanded)
+			{
+				if (!bBlocking)
+				{
+					bBlocking = true;
+				}
+			}
 		}
+		else
+		{
+			if (!bBlocking)
+			{
+				bBlocking = true;
+			}
+		}	
+		
 	}
 }
 void AMain::ESCUp()
@@ -443,6 +492,55 @@ void AMain::FKeyUp()
 	bFKeyDown = false;
 }
 
+void AMain::SheatheWeapon()
+{
+	bInCombatMode = false;
+	bAttacking = false;
+		
+		
+	if(bIsWeaponEquipped && CurrentWeapon) 		{
+			
+		bIsWeaponEquipped = false;
+			
+		//Play the Unsheath Animation
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		if (AnimInstance && UpperBodyMontage) {
+
+			AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
+				
+			if(CurrentWeapon->bIsTwoHanded)AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_TwoHanded"), UpperBodyMontage);
+			else AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_OneHanded"), UpperBodyMontage);
+
+		}  			
+			
+	}
+}
+
+void AMain::DrawWeapon()
+{
+	bInCombatMode = true;
+		
+	if(!bIsWeaponEquipped && CurrentWeapon)
+	{
+		bIsWeaponEquipped = true;
+			
+		//Play the Sheath Animation
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		if (AnimInstance && UpperBodyMontage) {
+
+			AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
+
+			if(CurrentWeapon->bIsTwoHanded)AnimInstance->Montage_JumpToSection(FName("DrawWeapon_TwoHanded"), UpperBodyMontage);
+			else AnimInstance->Montage_JumpToSection(FName("DrawWeapon_OneHanded"), UpperBodyMontage);
+
+		}
+			
+			
+	}
+}
+
 void AMain::FKeyDown()
 {
 	bFKeyDown = true;
@@ -450,51 +548,23 @@ void AMain::FKeyDown()
 	/** If already in Combat Mode, switch back to Normal Mode and Sheathe the Weapon, if equipped. */
 	if(bInCombatMode)
 	{
-		bInCombatMode = false;
-
-		if(bIsWeaponEquipped && CurrentWeapon) 		{
-			
-			bIsWeaponEquipped = false;
-			
-			//Play the Unsheath Animation
-			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-			if (AnimInstance && CombatMontage) {
-
-				AnimInstance->Montage_Play(CombatMontage, 1.0f);
-				AnimInstance->Montage_JumpToSection(FName("SheathWeapon"), CombatMontage);
-
-			}  			
-			
-		}
+		SheatheWeapon();
 	}
 
 	/** If in Normal Mode, switch to Combat Mode and draw the Weapon, if it exists.*/
 	else
 	{
-		bInCombatMode = true;
-		
-		if(!bIsWeaponEquipped && CurrentWeapon)
-		{
-			bIsWeaponEquipped = true;
-			
-			//Play the Sheath Animation
-			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-			if (AnimInstance && CombatMontage) {
-
-				AnimInstance->Montage_Play(CombatMontage, 1.0f);
-				AnimInstance->Montage_JumpToSection(FName("DrawWeapon"), CombatMontage);
-
-			}
-			
-			
-		}
+		DrawWeapon();
 	}
 }
 
 
-void AMain::PlayAttack(int32 Section)
+void AMain::SetInterpToEnemy(bool Interp) {
+
+	bInterpToEnemy = Interp;
+}
+
+void AMain::PlayMeleeAttack(int32 Section)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -516,7 +586,10 @@ void AMain::PlayAttack(int32 Section)
 		//Append Section number
 
 			//If Weapon attack
-			if(bIsWeaponEquipped)AttackName.Append("Attack_");
+			if(bIsWeaponEquipped){
+				if(CurrentWeapon->bIsTwoHanded)AttackName.Append("TwoHandedAttack_");
+				else AttackName.Append("OneHandedAttack_");
+			}
 
 			//else if melee attack
 			else AttackName.Append("MeleeAttack_");
@@ -554,42 +627,42 @@ void AMain::PlayAttack(int32 Section)
 	}
 }
 
-void AMain::ResetAttackComboSection()
+void AMain::ResetMeleeAttackComboSection()
 {
 	AttackComboSection = 0;
 }
 
-void AMain::Attack()
+void AMain::MeleeAttack()
 {
 	if (!bAttacking && (MovementStatus != EMovementStatus::EMS_Dead)) {
 		
 		bAttacking = true;
-		
+
 		SetInterpToEnemy(true);
-		
 				
-		PlayAttack((AttackComboSection++) % 3);
+		PlayMeleeAttack((AttackComboSection++) % 3);
 
 	}
 
 }
 
-void AMain::AttackEnd()
+void AMain::MeleeAttackEnd()
 {
 	bAttacking = false;
+
 	SetInterpToEnemy(false);
 
 	//Reset Swing Sound index
 	SwingSoundIndex = 0;
 
 	//Reset Combo Attack Section if Player does not press LMB within AttackComboSectionResetTime.
-	GetWorldTimerManager().SetTimer(AttackTimerHandle, this, &AMain::ResetAttackComboSection,
+	GetWorldTimerManager().SetTimer(AttackTimerHandle, this, &AMain::ResetMeleeAttackComboSection,
 	                                AttackComboSectionResetTime);
 	//If Player is still holding LMBDown, attack again.
 	if (bLMBDown)
 	{	
 		GetWorldTimerManager().ClearTimer(AttackTimerHandle);
-		Attack();
+		MeleeAttack();
 	}
 }
 
@@ -659,35 +732,19 @@ void AMain::BlockEnd()
 void AMain::Impact(int32 Section)
 {
 	
+	Section += 1;
+	
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (AnimInstance && CombatMontage) {
+	if (AnimInstance && UpperBodyMontage) {
 
-		switch (Section) {
-
-		case 0:
-			AnimInstance->Montage_Play(CombatMontage, 1.5f);
-			AnimInstance->Montage_JumpToSection(FName("HitFromBehind"), CombatMontage);
-			break;
-
-		case 1:
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
-			AnimInstance->Montage_JumpToSection(FName("Hit_1"), CombatMontage);
-			break;
-
-		case 2:
-			AnimInstance->Montage_Play(CombatMontage, 1.5f);
-			AnimInstance->Montage_JumpToSection(FName("Hit_2"), CombatMontage);
-			break;
-
-		case 3:
-			AnimInstance->Montage_Play(CombatMontage, 1.5f);
-			AnimInstance->Montage_JumpToSection(FName("Hit_3"), CombatMontage);
-			break;
-
-		default:
-			break;
-		}
+		FString HitName("Hit_");
+		
+		HitName.AppendInt(Section);
+		
+		//Play Montage
+		AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
+		AnimInstance->Montage_JumpToSection(*HitName, UpperBodyMontage);
 
 	}
 }
@@ -695,47 +752,22 @@ void AMain::Impact(int32 Section)
 
 void AMain::BlockImpact(int32 Section)
 {
+	Section += 1;
+	
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (AnimInstance && CombatMontage) {
-		switch (Section)
-		{
-		case 0:
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
-			AnimInstance->Montage_JumpToSection(FName("Impact_1"), CombatMontage);
-			break;
+	if (AnimInstance && UpperBodyMontage) {
 
-		case 1:
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
-			AnimInstance->Montage_JumpToSection(FName("Impact_2"), CombatMontage);
-			break;
-
-		case 2:
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
-			AnimInstance->Montage_JumpToSection(FName("Impact_3"), CombatMontage);
-			break;
-
-		case 3:
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
-			AnimInstance->Montage_JumpToSection(FName("Impact_4"), CombatMontage);
-			break;
-
-		case 4:
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
-			AnimInstance->Montage_JumpToSection(FName("Impact_5"), CombatMontage);
-			break;
-
-		case 5:
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
-			AnimInstance->Montage_JumpToSection(FName("Impact_6"), CombatMontage);
-			break;
-
-
-		default:
-			break;
-		}
+		FString ImpactName("Impact_");
+		
+		ImpactName.AppendInt(Section);
+		
+		//Play Montage
+		AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
+		AnimInstance->Montage_JumpToSection(*ImpactName, UpperBodyMontage);
 
 	}
+
 }
 
 
@@ -777,17 +809,19 @@ void AMain::SetMovementStatus(EMovementStatus Status)
 	MovementStatus = Status;
 
 	if (MovementStatus == EMovementStatus::EMS_Sprinting) {
-		GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
-	}
-	else if(bInCombatMode)
-	{
-		GetCharacterMovement()->MaxWalkSpeed = CombatMaxWalkSpeed;
+
+		if(bInCombatMode)GetCharacterMovement()->MaxWalkSpeed = CombatSprintingSpeed;
+		else GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
 	}
 	else if(bBlocking)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = BlockingMaxWalkSpeed;
 	}
-	
+	else if(bInCombatMode)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = CombatMaxWalkSpeed;
+	}
+		
 	else{
 		GetCharacterMovement()->MaxWalkSpeed = RunningSpeed;
 	}
@@ -796,10 +830,26 @@ void AMain::SetMovementStatus(EMovementStatus Status)
 void AMain::SetCurrentWeapon(AWeapon* WeaponToSet)
 {
 	if (CurrentWeapon) {
-		CurrentWeapon->Destroy();
+		
+		//Swap weapons
+		AWeapon* Temp = WeaponToSet;
+		WeaponToSet = CurrentWeapon;
+		CurrentWeapon = Temp;
+
+		//Reset old weapon to default state
+		WeaponToSet->SetWeaponState(EWeaponState::EWS_Pickup);
+		WeaponToSet->bShouldRotate = true;
+		WeaponToSet->SkeletalMesh->SetSimulatePhysics(true);
+
+		//Detach from Character
+		FDetachmentTransformRules DetachRules = FDetachmentTransformRules::KeepWorldTransform;
+		WeaponToSet->DetachFromActor(DetachRules);
+
+		//Set it at the location of the new weapon
+		WeaponToSet->SetActorLocation(OverlappingWeaponLocation);
 	}
 
-	CurrentWeapon = WeaponToSet;
+	else CurrentWeapon = WeaponToSet;
 }
 
 
@@ -833,10 +883,6 @@ void AMain::PlaySwingSound()
 	}
 }
 
-void AMain::SetInterpToEnemy(bool Interp) {
-
-	bInterpToEnemy = Interp;
-}
 
 float AMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
@@ -870,7 +916,7 @@ void AMain::Jump()
 		if (MainPlayerController->bPauseMenuVisible)return;
 	}
 
-	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking)) {
+	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking) && (!bAttacking)) {
 		Super::Jump();
 	}
 }
@@ -1055,3 +1101,5 @@ bool AMain::CanCheckStaminaStatus()
 	return((!GetMovementComponent()->IsFalling() && !bBlocking) && (bShiftKeyDown && (bMovingForward || bMovingRight)));
 	
 }
+
+

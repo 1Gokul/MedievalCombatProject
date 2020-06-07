@@ -21,11 +21,18 @@ AWeapon::AWeapon()
 	CombatCollision->SetupAttachment(GetRootComponent());
 
 	bWeaponParticles = false;
+	bShouldRotate = true;
 
 	WeaponState = EWeaponState::EWS_Pickup;
 
-	Damage = 25.0f;
-	BlockStaminaCost = 50.0f;
+	if(bIsTwoHanded)
+	{
+		Damage = 50.0f;
+		BlockStaminaCost = 50.0f;
+	}
+	else{
+		Damage = 25.0f;
+	}
 
 	HitSocketName = "ImpactSocket";
 }
@@ -41,6 +48,17 @@ void AWeapon::BeginPlay()
 	CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
+	
+	if(bIsTwoHanded)
+	{
+		SheathSocketName = FName("TopSpineSocket");
+		HandSocketName = FName("RightHandSocket_TwoHanded");
+	}
+	else{
+		SheathSocketName = FName("LeftThighSocket");
+		HandSocketName = FName("RightHandSocket_OneHanded");
+	}
 }
 
 void AWeapon::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -136,7 +154,7 @@ void AWeapon::Equip(AMain* Char)
 
 		SkeletalMesh->SetSimulatePhysics(false);
 
-		const USkeletalMeshSocket* RightHandSocket = Char->GetMesh()->GetSocketByName("RightHandSocket");
+		const USkeletalMeshSocket* RightHandSocket = Char->GetMesh()->GetSocketByName(HandSocketName);
 
 		if (RightHandSocket) {
 			RightHandSocket->AttachActor(this, Char->GetMesh());
@@ -159,11 +177,15 @@ void AWeapon::Equip(AMain* Char)
 void AWeapon::Sheath(AMain* Char)
 {
 	if (Char) {
-		SetInstigator(NULL);
-		const USkeletalMeshSocket* LeftThighSocket = Char->GetMesh()->GetSocketByName("LeftThighSocket");
 
-		if (LeftThighSocket) {
-			LeftThighSocket->AttachActor(this, Char->GetMesh());
+		DeactivateCollision();
+		
+		SetInstigator(NULL);
+		
+		const USkeletalMeshSocket* SheathSocket = Char->GetMesh()->GetSocketByName(SheathSocketName);
+
+		if (SheathSocket) {
+			SheathSocket->AttachActor(this, Char->GetMesh());
 		}
 
 		if (OnSheathSound) {
@@ -177,7 +199,7 @@ void AWeapon::Unsheathe(AMain* Char)
 	if (Char) {
 		SetInstigator(NULL);
 		
-		const USkeletalMeshSocket* RightHandSocket = Char->GetMesh()->GetSocketByName("RightHandSocket");
+		const USkeletalMeshSocket* RightHandSocket = Char->GetMesh()->GetSocketByName(HandSocketName);
 
 		if (RightHandSocket) {
 			RightHandSocket->AttachActor(this, Char->GetMesh());

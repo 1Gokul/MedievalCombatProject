@@ -84,6 +84,8 @@ public:
 	float SprintingSpeed;
 
 	float CombatMaxWalkSpeed;
+
+	float CombatSprintingSpeed;
 	
 	float BlockingMaxWalkSpeed;
 
@@ -91,10 +93,8 @@ public:
 
 	/** Player Movement*/
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bMovingForward;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bMovingRight;
 
 	bool bJumping;
@@ -113,7 +113,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 		float BaseLookUpRate;
-	
+
+	bool bInterpToEnemy;
+
+	float InterpSpeed;
 
 	/** LMB: Left Mouse Button*/
 	bool bLMBDown;
@@ -149,8 +152,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 		bool bBlocking;
 
+	/** Anim Montage for Attacks*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 		class UAnimMontage* CombatMontage;
+
+	/** Anim Montage for Sheathing, Drawing and Impacts */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+		class UAnimMontage* UpperBodyMontage;
 
 	/** Particles emitted when the player gets hit */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
@@ -159,6 +167,10 @@ public:
 	/** Sound that gets emitted when the player gets hit */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat ")
 		class USoundCue* HitSound;
+
+	 /** Fixed amount of distance the Player moves forward when AttackMove() is called. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackMovement")
+	float AttackMovementValue;
 
 	/** Used to make the Player reset back to the first attack animation if a timer limit(3s) is reached. */
 	FTimerHandle AttackTimerHandle;
@@ -183,10 +195,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Stats")
 	int32 Coins;
 
-	float InterpSpeed;
-
-	bool bInterpToEnemy;
-
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	class AEnemy* CombatTarget;
 
@@ -200,6 +209,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "SavedData")
 		TSubclassOf<class AItemStorage> WeaponStorage;
+
+	FVector OverlappingWeaponLocation;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -252,14 +263,22 @@ public:
 	void FKeyUp();
 	void FKeyDown();
 	
-	void PlayAttack(int32 Section);
+	void SheatheWeapon();
+	void DrawWeapon();
 
-	void ResetAttackComboSection();
+	/** Set bInterpToEnemy
+	*	@param Interp true or false depending on proximity to the Enemy
+	*/
+	void SetInterpToEnemy(bool Interp);
+	
+	void PlayMeleeAttack(int32 Section);
 
-	void Attack();
+	void ResetMeleeAttackComboSection();
+
+	void MeleeAttack();
 
 	UFUNCTION(BlueprintCallable)
-	void AttackEnd();
+	void MeleeAttackEnd();
 
 	void Block();
 
@@ -275,9 +294,7 @@ public:
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
-	/** Takes the location of the target and returns how 
-	*	much the player has to rotate to orient it to the target. */
-	FRotator GetLookAtRotationYaw(FVector Target);
+	
 
 	//setters
 
@@ -306,7 +323,11 @@ public:
 	/** Called to increase health of player if they take pick up a health potion */
 	UFUNCTION(BlueprintCallable)
 	void IncrementHealth(float Amount);
-
+	
+/** Takes the location of the target and returns how 
+	*	much the player has to rotate to orient it to the target. */
+	FRotator GetLookAtRotationYaw(FVector Target);
+	
 	/** Pressed down to enable sprinting*/
 	void ShiftKeyDown();
 
@@ -316,10 +337,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void PlaySwingSound();
 
-	/** Set bInterpToEnemy
-	*	@param Interp true or false depending on proximity to the Enemy
-	*/
-	void SetInterpToEnemy(bool Interp);
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, 
 							class AController* EventInstigator, AActor* DamageCauser) override;
@@ -342,5 +359,7 @@ public:
 	void LoadGameNoSwitch();
 
 	bool CanCheckStaminaStatus();
+
+	
 };
 
