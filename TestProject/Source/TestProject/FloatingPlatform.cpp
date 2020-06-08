@@ -8,7 +8,7 @@
 // Sets default values
 AFloatingPlatform::AFloatingPlatform()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
@@ -29,11 +29,11 @@ AFloatingPlatform::AFloatingPlatform()
 void AFloatingPlatform::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	StartPoint = GetActorLocation();
 	EndPoint += StartPoint;
 	Distance = (EndPoint - StartPoint).Size();
-	
+
 
 	GetWorldTimerManager().SetTimer(InterpTimer, this, &AFloatingPlatform::ToggleInterping, InterpTime);
 }
@@ -43,8 +43,8 @@ void AFloatingPlatform::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bIsInterping) {
-
+	if (bIsInterping)
+	{
 		FVector CurrentLocation = GetActorLocation();
 
 		FVector Interp = FMath::VInterpTo(CurrentLocation, EndPoint, DeltaTime, InterpSpeed);
@@ -53,8 +53,8 @@ void AFloatingPlatform::Tick(float DeltaTime)
 
 		float DistanceTraveled = (GetActorLocation() - StartPoint).Size();
 
-		if (Distance - DistanceTraveled <= 1.0f) {
-
+		if (Distance - DistanceTraveled <= 1.0f)
+		{
 			ToggleInterping();
 			GetWorldTimerManager().SetTimer(InterpTimer, this, &AFloatingPlatform::ToggleInterping, InterpTime);
 			SwapVectors(StartPoint, EndPoint);
@@ -73,4 +73,3 @@ void AFloatingPlatform::SwapVectors(FVector& VecOne, FVector& VecTwo)
 	VecOne = VecTwo;
 	VecTwo = Temp;
 }
-

@@ -10,44 +10,44 @@ UCLASS()
 class TESTPROJECT_API AFloatingPlatform : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AFloatingPlatform();
 
 	/** Mesh for the platform */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Platform)
-		class UStaticMeshComponent* Mesh;
+	class UStaticMeshComponent* Mesh;
 
 	/** Initial position of the platform*/
 	UPROPERTY(EditAnywhere)
-		FVector StartPoint;
+	FVector StartPoint;
 
 	/** Final position of the platform*/
 	UPROPERTY(EditAnywhere, meta = (MakeEditWidget = "true"))
-		FVector EndPoint;
+	FVector EndPoint;
 
 	/** Interpolation speed at which the platform will move*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Platform)
-		float InterpSpeed;
+	float InterpSpeed;
 
 	/** Interpolation time */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Platform)
-		float InterpTime;
+	float InterpTime;
 
 	FTimerHandle InterpTimer;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Platform)
-		bool bIsInterping;
+	bool bIsInterping;
 
 	float Distance;
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	void Tick(float DeltaTime) override;
 
 	void ToggleInterping();
 

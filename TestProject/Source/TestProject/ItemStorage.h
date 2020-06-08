@@ -10,18 +10,17 @@ UCLASS()
 class TESTPROJECT_API AItemStorage : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AItemStorage();
 
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
-public:	
+public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "SaveData")
-	TMap<FString, TSubclassOf<class AWeapon>>WeaponMap;
-
+	TMap<FString, TSubclassOf<class AWeapon>> WeaponMap;
 };

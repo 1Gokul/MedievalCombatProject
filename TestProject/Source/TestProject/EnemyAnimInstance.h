@@ -15,18 +15,17 @@ class TESTPROJECT_API UEnemyAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 public:
 
-	virtual void NativeInitializeAnimation() override;
+	void NativeInitializeAnimation() override;
 
 	UFUNCTION(BlueprintCallable, Category = AnimationProperties)
 	void UpdateAnimationProperties();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
-		float MovementSpeed;
+	float MovementSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
-		class APawn* Pawn;
+	class APawn* Pawn;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
-		class AEnemy* Enemy;
-
+	class AEnemy* Enemy;
 };

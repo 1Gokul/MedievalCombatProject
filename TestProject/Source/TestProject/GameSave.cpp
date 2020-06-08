@@ -3,8 +3,8 @@
 
 #include "GameSave.h"
 
-UGameSave::UGameSave() {
-
+UGameSave::UGameSave()
+{
 	PlayerName = TEXT("Default");
 
 	UserIndex = 0;

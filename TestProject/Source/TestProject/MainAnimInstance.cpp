@@ -5,31 +5,35 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Main.h"
 
-void UMainAnimInstance::NativeInitializeAnimation() {
-
-	if (Pawn == nullptr) {
+void UMainAnimInstance::NativeInitializeAnimation()
+{
+	if (Pawn == nullptr)
+	{
 		Pawn = TryGetPawnOwner();
-		if (Pawn) {
+		if (Pawn)
+		{
 			Main = Cast<AMain>(Pawn);
-
 		}
 	}
 }
 
-void UMainAnimInstance::UpdateAnimationProperties() {
-
-	if (Pawn == nullptr) {
+void UMainAnimInstance::UpdateAnimationProperties()
+{
+	if (Pawn == nullptr)
+	{
 		Pawn = TryGetPawnOwner();
 	}
 
-	if (Pawn) {
+	if (Pawn)
+	{
 		FVector Speed = Pawn->GetVelocity();
 		FVector LateralSpeed = FVector(Speed.X, Speed.Y, 0.0f);
 		MovementSpeed = LateralSpeed.Size();
 
 		bIsInAir = Pawn->GetMovementComponent()->IsFalling();
 
-		if (!Main) {
+		if (!Main)
+		{
 			Main = Cast<AMain>(Pawn);
 		}
 	}

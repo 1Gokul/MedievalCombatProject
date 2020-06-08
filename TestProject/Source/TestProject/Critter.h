@@ -17,28 +17,27 @@ public:
 
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
 public:
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UPROPERTY(EditAnywhere, Category = "Mesh")
-		USkeletalMeshComponent* MeshComponent;
+	USkeletalMeshComponent* MeshComponent;
 
 	UPROPERTY(EditAnywhere)
-		class UCameraComponent* Camera;
+	class UCameraComponent* Camera;
 
 	UPROPERTY(EditAnywhere, Category = "Pawn Movement")
-		float MaxSpeed;
+	float MaxSpeed;
 
 private:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 
 	FVector CurrentVelocity;
-	
 };

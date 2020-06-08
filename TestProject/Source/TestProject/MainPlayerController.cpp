@@ -10,37 +10,36 @@ void AMainPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (HUDOverlayAsset) {
+	if (HUDOverlayAsset)
+	{
 		HUDOverlay = CreateWidget<UUserWidget>(this, HUDOverlayAsset);
 	}
 
 	HUDOverlay->AddToViewport();
 	HUDOverlay->SetVisibility(ESlateVisibility::Visible);
 
-	if (WEnemyHealthBar) {
-
+	if (WEnemyHealthBar)
+	{
 		EnemyHealthBar = CreateWidget<UUserWidget>(this, WEnemyHealthBar);
 
-		if (EnemyHealthBar) {
-
+		if (EnemyHealthBar)
+		{
 			EnemyHealthBar->AddToViewport();
 			EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
-
 		}
 
 		FVector2D Alignment(0.0f, 0.0f);
 		EnemyHealthBar->SetAlignmentInViewport(Alignment);
 	}
 
-	if (WPauseMenu) {
-
+	if (WPauseMenu)
+	{
 		PauseMenu = CreateWidget<UUserWidget>(this, WPauseMenu);
 
-		if (PauseMenu) {
-
+		if (PauseMenu)
+		{
 			PauseMenu->AddToViewport();
 			PauseMenu->SetVisibility(ESlateVisibility::Hidden);
-
 		}
 	}
 }
@@ -49,7 +48,8 @@ void AMainPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (EnemyHealthBar) {
+	if (EnemyHealthBar)
+	{
 		FVector2D PositionInViewport;
 
 		ProjectWorldLocationToScreen(EnemyLocation, PositionInViewport);
@@ -67,7 +67,8 @@ void AMainPlayerController::Tick(float DeltaTime)
 
 void AMainPlayerController::DisplayEnemyHealthBar()
 {
-	if (EnemyHealthBar) {
+	if (EnemyHealthBar)
+	{
 		bEnemyHealthBarVisible = true;
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Visible);
 	}
@@ -75,7 +76,8 @@ void AMainPlayerController::DisplayEnemyHealthBar()
 
 void AMainPlayerController::RemoveEnemyHealthBar()
 {
-	if (EnemyHealthBar) {
+	if (EnemyHealthBar)
+	{
 		bEnemyHealthBarVisible = false;
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
 	}
@@ -83,11 +85,12 @@ void AMainPlayerController::RemoveEnemyHealthBar()
 
 void AMainPlayerController::DisplayPauseMenu_Implementation()
 {
-	if (PauseMenu) {
+	if (PauseMenu)
+	{
 		bPauseMenuVisible = true;
 
 		UGameplayStatics::SetGamePaused(GetWorld(), true);
-		
+
 		PauseMenu->SetVisibility(ESlateVisibility::Visible);
 
 		FInputModeGameAndUI InputModeGameAndUI;
@@ -99,13 +102,13 @@ void AMainPlayerController::DisplayPauseMenu_Implementation()
 
 void AMainPlayerController::RemovePauseMenu_Implementation()
 {
-	if (PauseMenu) {
-
+	if (PauseMenu)
+	{
 		UGameplayStatics::SetGamePaused(GetWorld(), false);
 
-		
+
 		GameModeOnly();
-		
+
 		bShowMouseCursor = false;
 
 		bPauseMenuVisible = false;
@@ -114,10 +117,12 @@ void AMainPlayerController::RemovePauseMenu_Implementation()
 
 void AMainPlayerController::TogglePauseMenu()
 {
-	if (bPauseMenuVisible) {
+	if (bPauseMenuVisible)
+	{
 		RemovePauseMenu();
 	}
-	else {
+	else
+	{
 		DisplayPauseMenu();
 	}
 }
@@ -128,4 +133,3 @@ void AMainPlayerController::GameModeOnly()
 
 	SetInputMode(InputModeGameOnly);
 }
-

@@ -10,13 +10,13 @@ UCLASS()
 class TESTPROJECT_API ASpawnVolume : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	ASpawnVolume();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Spawning)
-		class UBoxComponent* SpawningBox;
+	class UBoxComponent* SpawningBox;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Spawning)
 	TSubclassOf<AActor> Actor_1;
@@ -30,25 +30,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Spawning)
 	TSubclassOf<AActor> Actor_4;
 
-	TArray<TSubclassOf<AActor>>SpawnArray; 
+	TArray<TSubclassOf<AActor>> SpawnArray;
 
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	void Tick(float DeltaTime) override;
 
 	//Get a random point in the Spawn Volume to spawn the Actor
 	UFUNCTION(BlueprintPure, Category = Spawning)
-		FVector GetSpawnPoint();
+	FVector GetSpawnPoint();
 
 	//Get a random Actor to spawn
 	UFUNCTION(BlueprintPure, Category = Spawning)
-		TSubclassOf<AActor> GetSpawnActor();
+	TSubclassOf<AActor> GetSpawnActor();
 
 	//Spawn the Actor
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = Spawning)
-		void SpawnOurActor(UClass* ToSpawn, const FVector& Location);
+	void SpawnOurActor(UClass* ToSpawn, const FVector& Location);
 };

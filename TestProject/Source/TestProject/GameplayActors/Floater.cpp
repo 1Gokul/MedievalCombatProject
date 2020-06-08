@@ -6,7 +6,7 @@
 // Sets default values
 AFloater::AFloater()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CustomStaticMesh"));
@@ -30,13 +30,13 @@ AFloater::AFloater()
 void AFloater::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	PlacedLocation = GetActorLocation();
 
-	if (bInitializeFloaterLocation) {
+	if (bInitializeFloaterLocation)
+	{
 		SetActorLocation(InitialLocation);
 	}
-	
 }
 
 // Called every frame
@@ -44,8 +44,8 @@ void AFloater::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bShouldFloat) {
-
+	if (bShouldFloat)
+	{
 		FVector NewLocation = GetActorLocation();
 
 		NewLocation.Z = NewLocation.Z + Amplitude * FMath::Sin(TimePeriod * RunningTime) + StartingPosition;
@@ -55,6 +55,4 @@ void AFloater::Tick(float DeltaTime)
 
 		RunningTime += DeltaTime;
 	}
-
 }
-

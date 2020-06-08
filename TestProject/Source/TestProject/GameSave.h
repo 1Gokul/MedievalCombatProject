@@ -7,10 +7,9 @@
 #include "GameSave.generated.h"
 
 
-
 USTRUCT(BlueprintType)
-struct FCharacterStats {
-
+struct FCharacterStats
+{
 	GENERATED_BODY()
 
 
@@ -63,5 +62,4 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = Basic)
 	FCharacterStats CharacterStats;
-	
 };

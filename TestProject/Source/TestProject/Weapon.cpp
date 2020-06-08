@@ -12,7 +12,7 @@
 #include "Enemy.h"
 
 
-AWeapon::AWeapon() 
+AWeapon::AWeapon()
 {
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	SkeletalMesh->SetupAttachment(GetRootComponent());
@@ -25,12 +25,13 @@ AWeapon::AWeapon()
 
 	WeaponState = EWeaponState::EWS_Pickup;
 
-	if(bIsTwoHanded)
+	if (bIsTwoHanded)
 	{
 		Damage = 50.0f;
 		BlockStaminaCost = 50.0f;
 	}
-	else{
+	else
+	{
 		Damage = 25.0f;
 	}
 
@@ -45,90 +46,103 @@ void AWeapon::BeginPlay()
 	CombatCollision->OnComponentEndOverlap.AddDynamic(this, &AWeapon::CombatOnOverlapEnd);
 
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-	CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	CombatCollision->SetCollisionObjectType(ECC_WorldDynamic);
+	CombatCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	CombatCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
-	
-	if(bIsTwoHanded)
+
+	if (bIsTwoHanded)
 	{
 		SheathSocketName = FName("TopSpineSocket");
 		HandSocketName = FName("RightHandSocket_TwoHanded");
 	}
-	else{
+	else
+	{
 		SheathSocketName = FName("LeftThighSocket");
 		HandSocketName = FName("RightHandSocket_OneHanded");
 	}
 }
 
-void AWeapon::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AWeapon::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                             UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                             const FHitResult& SweepResult)
 {
 	Super::OnOverlapBegin(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	if ((WeaponState == EWeaponState::EWS_Pickup) && OtherActor) {
+	if ((WeaponState == EWeaponState::EWS_Pickup) && OtherActor)
+	{
 		AMain* Main = Cast<AMain>(OtherActor);
 
-		if (Main) {
+		if (Main)
+		{
 			Main->SetActiveOverlappingItem(this);
 		}
 	}
 }
 
-void AWeapon::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AWeapon::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+                           int32 OtherBodyIndex)
 {
 	Super::OnOverlapEnd(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 
-	if (OtherActor) {
+	if (OtherActor)
+	{
 		AMain* Main = Cast<AMain>(OtherActor);
 
-		if (Main) {
+		if (Main)
+		{
 			Main->SetActiveOverlappingItem(nullptr);
 		}
 	}
 }
 
-void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                   UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                                   const FHitResult& SweepResult)
 {
-	if (OtherActor) {
-		
+	if (OtherActor)
+	{
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
-		if (Enemy) {
-
+		if (Enemy)
+		{
 			DeactivateCollision();
 
 			Enemy->DeactivateCollisionLeft();
 			Enemy->DeactivateCollisionRight();
 
 			Enemy->AttackEnd();
-			
+
 			//Play Enemy Impact Animation
 			Enemy->Impact(MainAttackSection);
 
-			
 
 			//Enemy->bAttacking = false;
-			
-			if (Enemy->HitParticles) {
 
+			if (Enemy->HitParticles)
+			{
 				const USkeletalMeshSocket* WeaponSocket = SkeletalMesh->GetSocketByName("WeaponSocket");
 
-				if (WeaponSocket) {
+				if (WeaponSocket)
+				{
 					FVector SocketLocation = WeaponSocket->GetSocketLocation(SkeletalMesh);
-					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Enemy->HitParticles, SocketLocation, FRotator(0.0f), true);
-
+					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Enemy->HitParticles, SocketLocation,
+					                                         FRotator(0.0f), true);
 				}
 			}
-			if (Enemy->HitSound) {
+			if (Enemy->HitSound)
+			{
 				UGameplayStatics::PlaySound2D(this, Enemy->HitSound);
 			}
-			if (DamageTypeClass) {
+			if (DamageTypeClass)
+			{
 				UGameplayStatics::ApplyDamage(Enemy, Damage, WeaponInstigator, this, DamageTypeClass);
 			}
 		}
 	}
 }
 
-void AWeapon::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AWeapon::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 }
 
@@ -144,19 +158,20 @@ void AWeapon::DeactivateCollision()
 
 void AWeapon::Equip(AMain* Char)
 {
-	if (Char) {
-
+	if (Char)
+	{
 		Char->bInCombatMode = true;
-		
+
 		SetInstigator(Char->GetController());
-		SkeletalMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-		SkeletalMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+		SkeletalMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		SkeletalMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
 		SkeletalMesh->SetSimulatePhysics(false);
 
 		const USkeletalMeshSocket* RightHandSocket = Char->GetMesh()->GetSocketByName(HandSocketName);
 
-		if (RightHandSocket) {
+		if (RightHandSocket)
+		{
 			RightHandSocket->AttachActor(this, Char->GetMesh());
 			bShouldRotate = false;
 			Char->SetCurrentWeapon(this);
@@ -164,11 +179,13 @@ void AWeapon::Equip(AMain* Char)
 			Char->SetActiveOverlappingItem(nullptr);
 		}
 
-		if (OnEquipSound) {
+		if (OnEquipSound)
+		{
 			UGameplayStatics::PlaySound2D(this, OnEquipSound);
 		}
-		
-		if (!bWeaponParticles) {
+
+		if (!bWeaponParticles)
+		{
 			IdleParticlesComponent->Deactivate();
 		}
 	}
@@ -176,19 +193,21 @@ void AWeapon::Equip(AMain* Char)
 
 void AWeapon::Sheath(AMain* Char)
 {
-	if (Char) {
-
+	if (Char)
+	{
 		DeactivateCollision();
-		
-		SetInstigator(NULL);
-		
+
+		SetInstigator(nullptr);
+
 		const USkeletalMeshSocket* SheathSocket = Char->GetMesh()->GetSocketByName(SheathSocketName);
 
-		if (SheathSocket) {
+		if (SheathSocket)
+		{
 			SheathSocket->AttachActor(this, Char->GetMesh());
 		}
 
-		if (OnSheathSound) {
+		if (OnSheathSound)
+		{
 			UGameplayStatics::PlaySound2D(this, OnSheathSound);
 		}
 	}
@@ -196,16 +215,19 @@ void AWeapon::Sheath(AMain* Char)
 
 void AWeapon::Unsheathe(AMain* Char)
 {
-	if (Char) {
-		SetInstigator(NULL);
-		
+	if (Char)
+	{
+		SetInstigator(nullptr);
+
 		const USkeletalMeshSocket* RightHandSocket = Char->GetMesh()->GetSocketByName(HandSocketName);
 
-		if (RightHandSocket) {
+		if (RightHandSocket)
+		{
 			RightHandSocket->AttachActor(this, Char->GetMesh());
 		}
 
-		if (OnEquipSound) {
+		if (OnEquipSound)
+		{
 			UGameplayStatics::PlaySound2D(this, OnEquipSound);
 		}
 	}

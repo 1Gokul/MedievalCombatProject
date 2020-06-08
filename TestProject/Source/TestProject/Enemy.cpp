@@ -82,20 +82,20 @@ void AEnemy::BeginPlay()
 	LeftCombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
 
 	LeftCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	LeftCombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-	LeftCombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	LeftCombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	LeftCombatCollision->SetCollisionObjectType(ECC_WorldDynamic);
+	LeftCombatCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	LeftCombatCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
 	RightCombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
 	RightCombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
 
 	RightCombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	RightCombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-	RightCombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	RightCombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	RightCombatCollision->SetCollisionObjectType(ECC_WorldDynamic);
+	RightCombatCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	RightCombatCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 }
 
 // Called every frame
@@ -103,7 +103,8 @@ void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bInterpToEnemy && CombatTarget) {
+	if (bInterpToEnemy && CombatTarget)
+	{
 		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
 		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
 
@@ -327,8 +328,6 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 				//If facing the Enemy
 				if (!(bAngleCheck1 || bAngleCheck2))
 				{
-					
-					
 					//If Player is blocking with shield and has enough stamina to successfully block an attack  
 					if (Char->EquippedShield && Char->Stamina - Char->EquippedShield->BlockStaminaCost >= 0)
 					{
@@ -353,7 +352,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 						}
 					}
 
-					//If Player is blocking with weapon and has enough stamina to successfully block an attack
+						//If Player is blocking with weapon and has enough stamina to successfully block an attack
 					else if (Char->bIsWeaponEquipped && Char->Stamina - Char->CurrentWeapon->BlockStaminaCost >= 0)
 					{
 						//Weapons don't block attacks completely
@@ -390,7 +389,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 						}
 					}
 
-					//If Player does not have enough stamina to successfully block an attack
+						//If Player does not have enough stamina to successfully block an attack
 					else
 					{
 						InflictDamageOnMain(Char, false);
@@ -453,8 +452,8 @@ FRotator AEnemy::GetLookAtRotationYaw(FVector Target)
 	return LookAtRotationYaw;
 }
 
-void AEnemy::SetInterpToEnemy(bool Interp) {
-
+void AEnemy::SetInterpToEnemy(bool Interp)
+{
 	bInterpToEnemy = Interp;
 }
 
@@ -470,7 +469,7 @@ void AEnemy::Attack()
 		if (!bAttacking)
 		{
 			SetInterpToEnemy(true);
-			
+
 			bAttacking = true;
 			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -586,10 +585,10 @@ void AEnemy::Impact(int32 Section)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (AnimInstance && CombatMontage) {
-
-		switch (Section) {
-
+	if (AnimInstance && CombatMontage)
+	{
+		switch (Section)
+		{
 		case 0:
 			AnimInstance->Montage_Play(CombatMontage, 1.5f);
 			AnimInstance->Montage_JumpToSection(FName("HitLeft"), CombatMontage);
@@ -613,9 +612,5 @@ void AEnemy::Impact(int32 Section)
 		default:
 			break;
 		}
-
-	} 
+	}
 }
-
-
-

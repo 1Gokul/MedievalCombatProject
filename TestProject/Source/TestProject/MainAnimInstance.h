@@ -17,20 +17,19 @@ class TESTPROJECT_API UMainAnimInstance : public UAnimInstance
 public:
 
 	UFUNCTION(BlueprintCallable, Category = AnimationProperties)
-		void UpdateAnimationProperties();
-	
-	virtual void NativeInitializeAnimation() override;
+	void UpdateAnimationProperties();
+
+	void NativeInitializeAnimation() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
-		float MovementSpeed;
+	float MovementSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
-		bool bIsInAir;
+	bool bIsInAir;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
-		class APawn* Pawn;
+	class APawn* Pawn;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
-		class AMain* Main;
-	
+	class AMain* Main;
 };

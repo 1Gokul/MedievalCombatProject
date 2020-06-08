@@ -8,13 +8,14 @@
 
 
 UENUM(BlueprintType)
-enum class EEnemyMovementStatus : uint8 {
-	EMS_Idle			UMETA(DisplayName = "Idle"),
-	EMS_MoveToTarget	UMETA(DisplayName = "MoveToTarget"),
-	EMS_Attacking		UMETA(DisplayName = "Attacking"),
-	EMS_Dead			UMETA(DisplayName = "Dead"),
+enum class EEnemyMovementStatus : uint8
+{
+	EMS_Idle UMETA(DisplayName = "Idle"),
+	EMS_MoveToTarget UMETA(DisplayName = "MoveToTarget"),
+	EMS_Attacking UMETA(DisplayName = "Attacking"),
+	EMS_Dead UMETA(DisplayName = "Dead"),
 
-	EMS_MAX				UMETA(DisplayName = "DefaultMAX")
+	EMS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
 UCLASS()
@@ -27,7 +28,7 @@ public:
 	AEnemy();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
-		EEnemyMovementStatus EnemyMovementStatus;
+	EEnemyMovementStatus EnemyMovementStatus;
 
 	/** Enemy will become aggressive and chase the player 
 	*	if the player overlaps with this sphere	*/
@@ -37,16 +38,16 @@ public:
 	/** Enemy will become attack the player
 	*	if the player overlaps with this sphere	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-		 USphereComponent* CombatSphere;
+	USphereComponent* CombatSphere;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-		class AAIController* AIController;
+	class AAIController* AIController;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
-		bool bOverlappingCombatSphere;
+	bool bOverlappingCombatSphere;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
-		class AMain* CombatTarget;
+	class AMain* CombatTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	float Health;
@@ -83,7 +84,7 @@ public:
 	class UBoxComponent* RightCombatCollision;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-		class UAnimMontage* CombatMontage;
+	class UAnimMontage* CombatMontage;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bAttacking;
@@ -105,16 +106,16 @@ public:
 	FTimerHandle DeathTimer;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-		float DeathDelay;
+	float DeathDelay;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-		float MinAttackTime;
+	float MinAttackTime;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-		float MaxAttackTime;
+	float MaxAttackTime;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-		TSubclassOf<UDamageType> DamageTypeClass;
+	TSubclassOf<UDamageType> DamageTypeClass;
 
 	/** Socket names based on Attack Names*/
 
@@ -124,58 +125,68 @@ public:
 
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	FORCEINLINE void SetEnemyMovementStatus(EEnemyMovementStatus Status) { EnemyMovementStatus = Status; }
+
 	FORCEINLINE EEnemyMovementStatus GetEnemyMovementStatus() { return EnemyMovementStatus; }
 
 	/**Called if an AgroSphere Overlap Event starts. */
 	UFUNCTION()
-		virtual void AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	virtual void AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+	                                      const FHitResult& SweepResult);
 
 	/**Called if an CombatSphere Overlap Event starts. */
 	UFUNCTION()
-		virtual void CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	virtual void CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                                        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+	                                        const FHitResult& SweepResult);
 
 	/** Called when the AgroSphere Overlap Event ends */
 	UFUNCTION()
-		virtual void AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	virtual void AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                                    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	/** Called when the CombatSphere Overlap Event ends */
 	UFUNCTION()
-		virtual void CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	virtual void CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION(BlueprintCallable)
 	void MoveToTarget(class AMain* Main);
-	
+
 	void InflictDamageOnMain(AMain* Char, bool bHitFromBehind);
 
 	/**Called if a Combat Overlap Event starts. */
 	UFUNCTION()
-		void CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                          UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+	                          const FHitResult& SweepResult);
 
 	/** Called when the Combat Overlap Event ends. */
 	UFUNCTION()
-		void CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	void CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	                        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION(BlueprintCallable)
-		void ActivateCollisionLeft();
+	void ActivateCollisionLeft();
 
 	UFUNCTION(BlueprintCallable)
-		void ActivateCollisionRight();
+	void ActivateCollisionRight();
 
 	UFUNCTION(BlueprintCallable)
-		void DeactivateCollisionLeft();
+	void DeactivateCollisionLeft();
 
 	UFUNCTION(BlueprintCallable)
-		void DeactivateCollisionRight();
+	void DeactivateCollisionRight();
 
 	/** Takes the location of the target and returns how 
 	*	much the player has to rotate to orient it to the target. */
@@ -189,23 +200,20 @@ public:
 	void Attack();
 
 	UFUNCTION(BlueprintCallable)
-		void AttackEnd();
+	void AttackEnd();
 
-	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator, AActor* DamageCauser) override;
+	float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	                 class AController* EventInstigator, AActor* DamageCauser) override;
 
 	void Die(AActor* Causer);
 
 	UFUNCTION(BlueprintCallable)
-		void DeathEnd();
+	void DeathEnd();
 
-	bool Alive(); 
+	bool Alive();
 
 	void Disappear();
 
 	//Play Animation when hit
 	void Impact(int32 Section);
-
-
 };
-	

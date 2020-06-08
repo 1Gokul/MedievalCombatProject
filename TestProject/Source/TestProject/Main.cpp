@@ -4,7 +4,6 @@
 #include "Main.h"
 
 
-
 #include "Weapon.h"
 #include "Shield.h"
 #include "Enemy.h"
@@ -76,7 +75,7 @@ AMain::AMain()
 	CombatSprintingSpeed = 700.0f;
 	BlockingMaxWalkSpeed = 150.0f;
 
-	OverlappingWeaponLocation = FVector(0.0,0.0,0.0);
+	OverlappingWeaponLocation = FVector(0.0, 0.0, 0.0);
 
 	bShiftKeyDown = false;
 	bLMBDown = false;
@@ -90,7 +89,7 @@ AMain::AMain()
 	bMovingRight = false;
 	bJumping = false;
 	bInterpToEnemy = false;
-	
+
 	bIsWeaponEquipped = false;
 
 	AttackComboSection = 0;
@@ -103,9 +102,6 @@ AMain::AMain()
 	MinSprintStamina = 50.0f;
 
 	InterpSpeed = 15.0f;
-
-	AttackMovementValue = 100.0f;
-	
 }
 
 // Called when the game starts or when spawned
@@ -114,13 +110,13 @@ void AMain::BeginPlay()
 	Super::BeginPlay();
 
 	MainPlayerController = Cast<AMainPlayerController>(GetController());
-	
+
 	FString MapName = GetWorld()->GetMapName();
 	MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
 
 	//If the level is not the first level,
-	if (MapName != "TestMap") {
-
+	if (MapName != "TestMap")
+	{
 		//Load all items of player after level transition
 		LoadGameNoSwitch();
 
@@ -129,10 +125,10 @@ void AMain::BeginPlay()
 	}
 
 	//Return to game mode if game was loaded from the pause menu.
-	if (MainPlayerController) {
+	if (MainPlayerController)
+	{
 		MainPlayerController->GameModeOnly();
 	}
-
 }
 
 // Called every frame
@@ -145,32 +141,40 @@ void AMain::Tick(float DeltaTime)
 	// Decrease in Stamina per second when sprinting.
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
 
-	switch (StaminaStatus) {
-
+	switch (StaminaStatus)
+	{
 	case EStaminaStatus::ESS_Normal:
 
-		if (CanCheckStaminaStatus()) {	//or blocking
+		if (CanCheckStaminaStatus())
+		{	//or blocking
 
-			if (Stamina - DeltaStamina <= MinSprintStamina) {
+			if (Stamina - DeltaStamina <= MinSprintStamina)
+			{
 				SetStaminaStatus(EStaminaStatus::ESS_BelowMinimum);
 				Stamina -= DeltaStamina;
 			}
-			else {
+			else
+			{
 				Stamina -= DeltaStamina;
 			}
 
-			if ((bMovingForward || bMovingRight) && (!bBlocking)) {
+			if ((bMovingForward || bMovingRight) && (!bBlocking))
+			{
 				SetMovementStatus(EMovementStatus::EMS_Sprinting);
 			}
-			else {
+			else
+			{
 				SetMovementStatus(EMovementStatus::EMS_Normal);
 			}
 		}
-		else {
-			if (Stamina + DeltaStamina >= MaxStamina) {
+		else
+		{
+			if (Stamina + DeltaStamina >= MaxStamina)
+			{
 				Stamina = MaxStamina;
 			}
-			else {
+			else
+			{
 				Stamina += DeltaStamina;
 			}
 			SetMovementStatus(EMovementStatus::EMS_Normal);
@@ -179,28 +183,36 @@ void AMain::Tick(float DeltaTime)
 
 	case EStaminaStatus::ESS_BelowMinimum:
 
-		if (CanCheckStaminaStatus()) {
-			if (Stamina - DeltaStamina <= 0.0f) {
+		if (CanCheckStaminaStatus())
+		{
+			if (Stamina - DeltaStamina <= 0.0f)
+			{
 				SetStaminaStatus(EStaminaStatus::ESS_Exhausted);
 				Stamina = 0;
 				SetMovementStatus(EMovementStatus::EMS_Normal);
 			}
-			else {
+			else
+			{
 				Stamina -= DeltaStamina;
-				if ((bMovingForward || bMovingRight) && (!bBlocking)) {
+				if ((bMovingForward || bMovingRight) && (!bBlocking))
+				{
 					SetMovementStatus(EMovementStatus::EMS_Sprinting);
 				}
-				else {
+				else
+				{
 					SetMovementStatus(EMovementStatus::EMS_Normal);
 				}
 			}
 		}
-		else {
-			if (Stamina + DeltaStamina >= MinSprintStamina) {
+		else
+		{
+			if (Stamina + DeltaStamina >= MinSprintStamina)
+			{
 				SetStaminaStatus(EStaminaStatus::ESS_Normal);
 				Stamina += DeltaStamina;
 			}
-			else {
+			else
+			{
 				Stamina += DeltaStamina;
 			}
 			SetMovementStatus(EMovementStatus::EMS_Normal);
@@ -209,10 +221,12 @@ void AMain::Tick(float DeltaTime)
 
 	case EStaminaStatus::ESS_Exhausted:
 
-		if (CanCheckStaminaStatus()) {
+		if (CanCheckStaminaStatus())
+		{
 			Stamina = 0.0f;
 		}
-		else {
+		else
+		{
 			SetStaminaStatus(EStaminaStatus::ESS_ExhaustedRecovering);
 			Stamina += DeltaStamina;
 		}
@@ -221,11 +235,13 @@ void AMain::Tick(float DeltaTime)
 
 	case EStaminaStatus::ESS_ExhaustedRecovering:
 
-		if (Stamina + DeltaStamina >= MinSprintStamina) {
+		if (Stamina + DeltaStamina >= MinSprintStamina)
+		{
 			SetStaminaStatus(EStaminaStatus::ESS_Normal);
 			Stamina += DeltaStamina;
 		}
-		else {
+		else
+		{
 			Stamina += DeltaStamina;
 		}
 		SetMovementStatus(EMovementStatus::EMS_Normal);
@@ -235,7 +251,8 @@ void AMain::Tick(float DeltaTime)
 		break;
 	}
 
-	if (bInterpToEnemy && CombatTarget) {
+	if (bInterpToEnemy && CombatTarget)
+	{
 		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
 		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
 
@@ -243,10 +260,12 @@ void AMain::Tick(float DeltaTime)
 		SetActorRotation(InterpRotation);
 	}
 
-	if (CombatTarget) {
+	if (CombatTarget)
+	{
 		CombatTargetLocation = CombatTarget->GetActorLocation();
 
-		if (MainPlayerController) {
+		if (MainPlayerController)
+		{
 			MainPlayerController->EnemyLocation = CombatTargetLocation;
 		}
 	}
@@ -283,32 +302,28 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	PlayerInputComponent->BindAction("CombatMode", IE_Pressed, this, &AMain::FKeyDown);
 	PlayerInputComponent->BindAction("CombatMode", IE_Released, this, &AMain::FKeyUp);
-
 }
 
 bool AMain::bCanMove(float Value)
 {
-	if (MainPlayerController) {
-
-		return(
+	if (MainPlayerController)
+	{
+		return (
 			(Value != 0.0f)
 			&& (!bAttacking)
 			&& (MovementStatus != EMovementStatus::EMS_Dead)
 			&& (!MainPlayerController->bPauseMenuVisible)
-			);
-
+		);
 	}
-
-	else {
-		return false;
-	}
+	return false;
 }
 
 void AMain::MoveForward(float Value)
 {
 	bMovingForward = false;
 
-	if (bCanMove(Value)) {
+	if (bCanMove(Value))
+	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
@@ -321,13 +336,16 @@ void AMain::MoveForward(float Value)
 
 void AMain::Turn(float Value)
 {
-	if (bCanMove(Value)) {
+	if (bCanMove(Value))
+	{
 		AddControllerYawInput(Value);
 	}
 }
+
 void AMain::LookUp(float Value)
 {
-	if (bCanMove(Value)) {
+	if (bCanMove(Value))
+	{
 		AddControllerPitchInput(Value);
 	}
 }
@@ -336,7 +354,8 @@ void AMain::MoveRight(float Value)
 {
 	bMovingRight = false;
 
-	if (bCanMove(Value)) {
+	if (bCanMove(Value))
+	{
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
@@ -368,18 +387,19 @@ void AMain::LMBDown()
 
 	if (MovementStatus == EMovementStatus::EMS_Dead)return;
 
-	if (MainPlayerController) {
+	if (MainPlayerController)
+	{
 		if (MainPlayerController->bPauseMenuVisible)return;
 	}
 
-	
-	
-	//If Player is overlapping with an Item, they can equip it 
-	if (ActiveOverlappingItem) {
 
+	//If Player is overlapping with an Item, they can equip it 
+	if (ActiveOverlappingItem)
+	{
 		//If the Item is a Weapon
 		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
-		if (Weapon) {
+		if (Weapon)
+		{
 			if (CurrentWeapon)
 			{
 				if (bIsWeaponEquipped)
@@ -398,20 +418,20 @@ void AMain::LMBDown()
 				SetActiveOverlappingItem(nullptr);
 			}
 		}
-		else{
+		else
+		{
 			AShield* Shield = Cast<AShield>(ActiveOverlappingItem);
-			if(Shield)
+			if (Shield)
 			{
 				Shield->Equip(this);
 				SetActiveOverlappingItem(nullptr);
 			}
 		}
-
 	}
 
-	/** else if Player already has a weapon equipped AND
-	*	is not already blocking, perform an Attack.
-	*/
+		/** else if Player already has a weapon equipped AND
+		*	is not already blocking, perform an Attack.
+		*/
 	else if (!bBlocking)
 	{
 		UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
@@ -432,7 +452,7 @@ void AMain::RMBUp()
 	bBlocking = false;
 	bRMBDown = false;
 
-	 //GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+	//GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
 	//EquippedShield->DeactivateCollision();
 }
 
@@ -442,14 +462,15 @@ void AMain::RMBDown()
 
 	if (MovementStatus == EMovementStatus::EMS_Dead)return;
 
-	if (MainPlayerController) {
+	if (MainPlayerController)
+	{
 		if (MainPlayerController->bPauseMenuVisible)return;
 	}
-	
+
 	/** else if Player already has a shield equipped AND
 	*	is not already attacking, perform a Block.
 	*/
-	if (bInCombatMode && !bAttacking && MovementStatus != EMovementStatus::EMS_Dead )
+	if (bInCombatMode && !bAttacking && MovementStatus != EMovementStatus::EMS_Dead)
 	{
 		//Blocking with a Weapon should only be allowed if the weapon is Two-Handed.
 		if (CurrentWeapon && !EquippedShield)
@@ -468,10 +489,10 @@ void AMain::RMBDown()
 			{
 				bBlocking = true;
 			}
-		}	
-		
+		}
 	}
 }
+
 void AMain::ESCUp()
 {
 	bESCDown = false;
@@ -481,8 +502,9 @@ void AMain::ESCDown()
 {
 	bESCDown = true;
 
-	
-	if (MainPlayerController) {
+
+	if (MainPlayerController)
+	{
 		MainPlayerController->TogglePauseMenu();
 	}
 }
@@ -496,48 +518,45 @@ void AMain::SheatheWeapon()
 {
 	bInCombatMode = false;
 	bAttacking = false;
-		
-		
-	if(bIsWeaponEquipped && CurrentWeapon) 		{
-			
+
+
+	if (bIsWeaponEquipped && CurrentWeapon)
+	{
 		bIsWeaponEquipped = false;
-			
+
 		//Play the Unsheath Animation
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-		if (AnimInstance && UpperBodyMontage) {
-
+		if (AnimInstance && UpperBodyMontage)
+		{
 			AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
-				
-			if(CurrentWeapon->bIsTwoHanded)AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_TwoHanded"), UpperBodyMontage);
-			else AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_OneHanded"), UpperBodyMontage);
 
-		}  			
-			
+			if (CurrentWeapon->bIsTwoHanded)AnimInstance->Montage_JumpToSection(
+				FName("SheatheWeapon_TwoHanded"), UpperBodyMontage);
+			else AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_OneHanded"), UpperBodyMontage);
+		}
 	}
 }
 
 void AMain::DrawWeapon()
 {
 	bInCombatMode = true;
-		
-	if(!bIsWeaponEquipped && CurrentWeapon)
+
+	if (!bIsWeaponEquipped && CurrentWeapon)
 	{
 		bIsWeaponEquipped = true;
-			
+
 		//Play the Sheath Animation
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-		if (AnimInstance && UpperBodyMontage) {
-
+		if (AnimInstance && UpperBodyMontage)
+		{
 			AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 
-			if(CurrentWeapon->bIsTwoHanded)AnimInstance->Montage_JumpToSection(FName("DrawWeapon_TwoHanded"), UpperBodyMontage);
+			if (CurrentWeapon->bIsTwoHanded)AnimInstance->Montage_JumpToSection(
+				FName("DrawWeapon_TwoHanded"), UpperBodyMontage);
 			else AnimInstance->Montage_JumpToSection(FName("DrawWeapon_OneHanded"), UpperBodyMontage);
-
 		}
-			
-			
 	}
 }
 
@@ -546,12 +565,12 @@ void AMain::FKeyDown()
 	bFKeyDown = true;
 
 	/** If already in Combat Mode, switch back to Normal Mode and Sheathe the Weapon, if equipped. */
-	if(bInCombatMode)
+	if (bInCombatMode)
 	{
 		SheatheWeapon();
 	}
 
-	/** If in Normal Mode, switch to Combat Mode and draw the Weapon, if it exists.*/
+		/** If in Normal Mode, switch to Combat Mode and draw the Weapon, if it exists.*/
 	else
 	{
 		DrawWeapon();
@@ -559,8 +578,8 @@ void AMain::FKeyDown()
 }
 
 
-void AMain::SetInterpToEnemy(bool Interp) {
-
+void AMain::SetInterpToEnemy(bool Interp)
+{
 	bInterpToEnemy = Interp;
 }
 
@@ -568,62 +587,62 @@ void AMain::PlayMeleeAttack(int32 Section)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	
+
 	//Attack Sections start from 1
 	Section += 1;
-	
-	if(Section > 0 && Section < 4){
 
-	if (AnimInstance && CombatMontage) {
+	if (Section > 0 && Section < 4)
+	{
+		if (AnimInstance && CombatMontage)
+		{
+			if (CurrentWeapon)CurrentWeapon->MainAttackSection = Section;
 
-		if(CurrentWeapon)CurrentWeapon->MainAttackSection = Section;
+			//Get a random Final Combo Attack (Ranges from Attack_3 to Attack_5)
+			if (Section == 3)Section += FMath::RandRange(0, 2);
 
-		//Get a random Final Combo Attack (Ranges from Attack_3 to Attack_5)
-		if(Section == 3)Section += FMath::RandRange(0, 2);
+			FString AttackName;
 
-		FString AttackName;
-		
-		//Append Section number
+			//Append Section number
 
 			//If Weapon attack
-			if(bIsWeaponEquipped){
-				if(CurrentWeapon->bIsTwoHanded)AttackName.Append("TwoHandedAttack_");
+			if (bIsWeaponEquipped)
+			{
+				if (CurrentWeapon->bIsTwoHanded)AttackName.Append("TwoHandedAttack_");
 				else AttackName.Append("OneHandedAttack_");
 			}
 
-			//else if melee attack
+				//else if melee attack
 			else AttackName.Append("MeleeAttack_");
+
+			AttackName.AppendInt(Section);
+
+			UE_LOG(LogTemp, Warning, TEXT("Attack = %s"), *AttackName);
+
+			//Play Montage
+			AnimInstance->Montage_Play(CombatMontage, 1.0f);
+			AnimInstance->Montage_JumpToSection(*AttackName, CombatMontage);
+
+			/*	switch (Section) {
 		
-		AttackName.AppendInt(Section);
-
-		UE_LOG(LogTemp, Warning, TEXT("Attack = %s"), *AttackName);
+				case 0:
+					AnimInstance->Montage_Play(CombatMontage, 2.20f);
+					AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
+					break;
 		
-		//Play Montage
-		AnimInstance->Montage_Play(CombatMontage, 1.0f);
-		AnimInstance->Montage_JumpToSection(*AttackName, CombatMontage);
+				case 1:
+					AnimInstance->Montage_Play(CombatMontage, 1.80f);
+					AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
+					break;
 		
-	/*	switch (Section) {
-
-		case 0:
-			AnimInstance->Montage_Play(CombatMontage, 2.20f);
-			AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
-			break;
-
-		case 1:
-			AnimInstance->Montage_Play(CombatMontage, 1.80f);
-			AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
-			break;
-
-		case 2:
-			AnimInstance->Montage_Play(CombatMontage, 1.80f);
-			AnimInstance->Montage_JumpToSection(FName("Attack_3"), CombatMontage);
-			break;
-
-		default:
-			break;
-		} */
-
-	}
+				case 2:
+					AnimInstance->Montage_Play(CombatMontage, 1.80f);
+					AnimInstance->Montage_JumpToSection(FName("Attack_3"), CombatMontage);
+					break;
+		
+				default:
+					break;
+				} */
+		}
 	}
 }
 
@@ -634,16 +653,14 @@ void AMain::ResetMeleeAttackComboSection()
 
 void AMain::MeleeAttack()
 {
-	if (!bAttacking && (MovementStatus != EMovementStatus::EMS_Dead)) {
-		
+	if (!bAttacking && (MovementStatus != EMovementStatus::EMS_Dead))
+	{
 		bAttacking = true;
 
 		SetInterpToEnemy(true);
-				
+
 		PlayMeleeAttack((AttackComboSection++) % 3);
-
 	}
-
 }
 
 void AMain::MeleeAttackEnd()
@@ -660,7 +677,7 @@ void AMain::MeleeAttackEnd()
 	                                AttackComboSectionResetTime);
 	//If Player is still holding LMBDown, attack again.
 	if (bLMBDown)
-	{	
+	{
 		GetWorldTimerManager().ClearTimer(AttackTimerHandle);
 		MeleeAttack();
 	}
@@ -675,35 +692,34 @@ void AMain::Block()
 	//	EquippedShield->ActivateCollision();
 
 
-
 	//	if(!bBlocking)bBlocking = true;
-		//Combat Montage method
-		
-		////if Player was not already blocking
-		//if (!bBlocking) {
-		//	bBlocking = true;
+	//Combat Montage method
 
-			////Play the "Going To Block" Animation
-			//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	////if Player was not already blocking
+	//if (!bBlocking) {
+	//	bBlocking = true;
 
-			//if (AnimInstance && CombatMontage) {
+	////Play the "Going To Block" Animation
+	//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-			//	AnimInstance->Montage_Play(CombatMontage, 1.0f);
-			//	AnimInstance->Montage_JumpToSection(FName("BlockStart"), CombatMontage);
+	//if (AnimInstance && CombatMontage) {
 
-			//}
-		//}
-		////If already blocking,
-		//else{
+	//	AnimInstance->Montage_Play(CombatMontage, 1.0f);
+	//	AnimInstance->Montage_JumpToSection(FName("BlockStart"), CombatMontage);
 
-		//	//Play the "Blocking Idle" animation
-		//	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	//}
+	//}
+	////If already blocking,
+	//else{
 
-		//	if (AnimInstance && CombatMontage) {
-		//			AnimInstance->Montage_Play(CombatMontage, 3.0f);
-		//			AnimInstance->Montage_JumpToSection(FName("BlockIdle"), CombatMontage);
-		//	}
-		//}
+	//	//Play the "Blocking Idle" animation
+	//	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	//	if (AnimInstance && CombatMontage) {
+	//			AnimInstance->Montage_Play(CombatMontage, 3.0f);
+	//			AnimInstance->Montage_JumpToSection(FName("BlockIdle"), CombatMontage);
+	//	}
+	//}
 	//}
 }
 
@@ -731,21 +747,19 @@ void AMain::BlockEnd()
 
 void AMain::Impact(int32 Section)
 {
-	
 	Section += 1;
-	
+
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (AnimInstance && UpperBodyMontage) {
-
+	if (AnimInstance && UpperBodyMontage)
+	{
 		FString HitName("Hit_");
-		
+
 		HitName.AppendInt(Section);
-		
+
 		//Play Montage
 		AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 		AnimInstance->Montage_JumpToSection(*HitName, UpperBodyMontage);
-
 	}
 }
 
@@ -753,21 +767,19 @@ void AMain::Impact(int32 Section)
 void AMain::BlockImpact(int32 Section)
 {
 	Section += 1;
-	
+
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (AnimInstance && UpperBodyMontage) {
-
+	if (AnimInstance && UpperBodyMontage)
+	{
 		FString ImpactName("Impact_");
-		
+
 		ImpactName.AppendInt(Section);
-		
+
 		//Play Montage
 		AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 		AnimInstance->Montage_JumpToSection(*ImpactName, UpperBodyMontage);
-
 	}
-
 }
 
 
@@ -776,7 +788,8 @@ void AMain::Die()
 	if (MovementStatus == EMovementStatus::EMS_Dead)return;
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && CombatMontage) {
+	if (AnimInstance && CombatMontage)
+	{
 		AnimInstance->Montage_Play(CombatMontage, 3.0f);
 		AnimInstance->Montage_JumpToSection(FName("Death"));
 	}
@@ -791,10 +804,10 @@ void AMain::IncrementHealth(float Amount)
 {
 	Health += Amount;
 
-	if (Health >= MaxHealth) {
+	if (Health >= MaxHealth)
+	{
 		Health = MaxHealth;
 	}
-
 }
 
 FRotator AMain::GetLookAtRotationYaw(FVector Target)
@@ -808,29 +821,30 @@ void AMain::SetMovementStatus(EMovementStatus Status)
 {
 	MovementStatus = Status;
 
-	if (MovementStatus == EMovementStatus::EMS_Sprinting) {
-
-		if(bInCombatMode)GetCharacterMovement()->MaxWalkSpeed = CombatSprintingSpeed;
+	if (MovementStatus == EMovementStatus::EMS_Sprinting)
+	{
+		if (bInCombatMode)GetCharacterMovement()->MaxWalkSpeed = CombatSprintingSpeed;
 		else GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
 	}
-	else if(bBlocking)
+	else if (bBlocking)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = BlockingMaxWalkSpeed;
 	}
-	else if(bInCombatMode)
+	else if (bInCombatMode)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = CombatMaxWalkSpeed;
 	}
-		
-	else{
+
+	else
+	{
 		GetCharacterMovement()->MaxWalkSpeed = RunningSpeed;
 	}
 }
 
 void AMain::SetCurrentWeapon(AWeapon* WeaponToSet)
 {
-	if (CurrentWeapon) {
-		
+	if (CurrentWeapon)
+	{
 		//Swap weapons
 		AWeapon* Temp = WeaponToSet;
 		WeaponToSet = CurrentWeapon;
@@ -855,7 +869,8 @@ void AMain::SetCurrentWeapon(AWeapon* WeaponToSet)
 
 void AMain::SetEquippedShield(AShield* ShieldToSet)
 {
-	if (EquippedShield) {
+	if (EquippedShield)
+	{
 		EquippedShield->Destroy();
 	}
 
@@ -875,8 +890,10 @@ void AMain::ShiftKeyUp()
 void AMain::PlaySwingSound()
 {
 	//Each weapon has specefic Swing Sounds depending on the current Attack number.
-	if(SwingSoundIndex < CurrentWeapon->SwingSounds.Num()){
-		if (CurrentWeapon->SwingSounds[SwingSoundIndex]) {
+	if (SwingSoundIndex < CurrentWeapon->SwingSounds.Num())
+	{
+		if (CurrentWeapon->SwingSounds[SwingSoundIndex])
+		{
 			UGameplayStatics::PlaySound2D(this, CurrentWeapon->SwingSounds[SwingSoundIndex]);
 			++SwingSoundIndex;
 		}
@@ -884,17 +901,21 @@ void AMain::PlaySwingSound()
 }
 
 
-float AMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+float AMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator,
+                        AActor* DamageCauser)
 {
 	Health -= DamageAmount;
 
-	if (Health <= 0.0f) {
+	if (Health <= 0.0f)
+	{
 		Die();
 
-		if (DamageCauser) {
+		if (DamageCauser)
+		{
 			AEnemy* Enemy = Cast<AEnemy>(DamageCauser);
 
-			if (Enemy) {
+			if (Enemy)
+			{
 				Enemy->bHasValidTarget = false;
 			}
 		}
@@ -912,11 +933,13 @@ void AMain::DeathEnd()
 
 void AMain::Jump()
 {
-	if (MainPlayerController) {
+	if (MainPlayerController)
+	{
 		if (MainPlayerController->bPauseMenuVisible)return;
 	}
 
-	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking) && (!bAttacking)) {
+	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking) && (!bAttacking))
+	{
 		Super::Jump();
 	}
 }
@@ -928,9 +951,10 @@ void AMain::UpdateCombatTarget()
 
 	GetOverlappingActors(OverlappingActors, EnemyFilter);
 
-	if (OverlappingActors.Num() == 0) {
-
-		if (MainPlayerController) {
+	if (OverlappingActors.Num() == 0)
+	{
+		if (MainPlayerController)
+		{
 			MainPlayerController->RemoveEnemyHealthBar();
 		}
 
@@ -939,23 +963,28 @@ void AMain::UpdateCombatTarget()
 
 	AEnemy* ClosestEnemy = Cast<AEnemy>(OverlappingActors[0]);
 
-	if (ClosestEnemy) {
+	if (ClosestEnemy)
+	{
 		FVector Location = GetActorLocation();
 
 		float MinDistance = (ClosestEnemy->GetActorLocation() - Location).Size();
 
-		for (auto Actor : OverlappingActors) {
+		for (auto Actor : OverlappingActors)
+		{
 			AEnemy* Enemy = Cast<AEnemy>(Actor);
-			if (Enemy) {
+			if (Enemy)
+			{
 				float DistanceToActor = (Enemy->GetActorLocation() - Location).Size();
-				if (DistanceToActor < MinDistance) {
+				if (DistanceToActor < MinDistance)
+				{
 					MinDistance = DistanceToActor;
 					ClosestEnemy = Enemy;
 				}
 			}
 		}
 
-		if (MainPlayerController) {
+		if (MainPlayerController)
+		{
 			MainPlayerController->DisplayEnemyHealthBar();
 		}
 		SetCombatTarget(ClosestEnemy);
@@ -967,12 +996,14 @@ void AMain::SwitchLevel(FName LevelName)
 {
 	UWorld* World = GetWorld();
 
-	if (World) {
+	if (World)
+	{
 		FString CurrentLevel = World->GetMapName();
 
 		FName CurrentLevelName(*CurrentLevel);
 
-		if (CurrentLevelName != LevelName) {
+		if (CurrentLevelName != LevelName)
+		{
 			UGameplayStatics::OpenLevel(World, LevelName);
 		}
 	}
@@ -980,7 +1011,8 @@ void AMain::SwitchLevel(FName LevelName)
 
 void AMain::SaveGame()
 {
-	UGameSave* SaveGameInstance = Cast<UGameSave>(UGameplayStatics::CreateSaveGameObject(UGameSave::StaticClass()));
+	UGameSave* SaveGameInstance = Cast<UGameSave>(
+		UGameplayStatics::CreateSaveGameObject(UGameSave::StaticClass()));
 
 	SaveGameInstance->CharacterStats.Health = Health;
 	SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
@@ -988,7 +1020,8 @@ void AMain::SaveGame()
 	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
 	SaveGameInstance->CharacterStats.Coins = Coins;
 
-	if (CurrentWeapon) {
+	if (CurrentWeapon)
+	{
 		SaveGameInstance->CharacterStats.WeaponName = CurrentWeapon->Name;
 	}
 
@@ -1000,44 +1033,48 @@ void AMain::SaveGame()
 	SaveGameInstance->CharacterStats.LevelName = MapName;
 
 
-
 	SaveGameInstance->CharacterStats.Location = GetActorLocation();
 	SaveGameInstance->CharacterStats.Rotation = GetActorRotation();
 
-	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->PlayerName, SaveGameInstance->UserIndex);
+	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->PlayerName,
+	                                 SaveGameInstance->UserIndex);
 }
 
 void AMain::LoadGame(bool SetPosition)
 {
-	UGameSave* LoadGameInstance = Cast<UGameSave>(UGameplayStatics::CreateSaveGameObject(UGameSave::StaticClass()));
+	UGameSave* LoadGameInstance = Cast<UGameSave>(
+		UGameplayStatics::CreateSaveGameObject(UGameSave::StaticClass()));
 
-	LoadGameInstance = Cast<UGameSave>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
+	LoadGameInstance = Cast<UGameSave>(
+		UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
 
-	if (LoadGameInstance) {
-
+	if (LoadGameInstance)
+	{
 		Health = LoadGameInstance->CharacterStats.Health;
 		MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
 		Stamina = LoadGameInstance->CharacterStats.Stamina;
 		MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
 		Coins = LoadGameInstance->CharacterStats.Coins;
 
-		if (WeaponStorage) {
-
+		if (WeaponStorage)
+		{
 			//Create an Instance of WeaponStorage
 			AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
 
-			if (Weapons) {
+			if (Weapons)
+			{
 				FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
 
-				if (WeaponName != TEXT("")) {
+				if (WeaponName != TEXT(""))
+				{
 					AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
 					WeaponToEquip->Equip(this);
 				}
-
 			}
 		}
 
-		if (SetPosition) {
+		if (SetPosition)
+		{
 			SetActorLocation(LoadGameInstance->CharacterStats.Location);
 			SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
 		}
@@ -1052,19 +1089,20 @@ void AMain::LoadGame(bool SetPosition)
 
 		//If map name is not empty AND it is not the current map, change the level
 		if ((LoadGameInstance->CharacterStats.LevelName != "")
-				&& (LoadGameInstance->CharacterStats.LevelName != MapName)){
-
+			&& (LoadGameInstance->CharacterStats.LevelName != MapName))
+		{
 			SwitchLevel(*LoadGameInstance->CharacterStats.LevelName);
 		}
 	}
-
 }
 
 void AMain::LoadGameNoSwitch()
 {
-	UGameSave* LoadGameInstance = Cast<UGameSave>(UGameplayStatics::CreateSaveGameObject(UGameSave::StaticClass()));
+	UGameSave* LoadGameInstance = Cast<UGameSave>(
+		UGameplayStatics::CreateSaveGameObject(UGameSave::StaticClass()));
 
-	LoadGameInstance = Cast<UGameSave>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
+	LoadGameInstance = Cast<UGameSave>(
+		UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
 
 	Health = LoadGameInstance->CharacterStats.Health;
 	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
@@ -1072,21 +1110,20 @@ void AMain::LoadGameNoSwitch()
 	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
 	Coins = LoadGameInstance->CharacterStats.Coins;
 
-	if (WeaponStorage) {
-
+	if (WeaponStorage)
+	{
 		//Create an Instance of WeaponStorage
 		AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
 
-		if (Weapons) {
+		if (Weapons)
+		{
 			FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
 
-			if (WeaponName != TEXT("")) {
-
+			if (WeaponName != TEXT(""))
+			{
 				AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
 				WeaponToEquip->Equip(this);
-
 			}
-
 		}
 	}
 
@@ -1098,8 +1135,7 @@ void AMain::LoadGameNoSwitch()
 
 bool AMain::CanCheckStaminaStatus()
 {
-	return((!GetMovementComponent()->IsFalling() && !bBlocking) && (bShiftKeyDown && (bMovingForward || bMovingRight)));
-	
+	return ((!GetMovementComponent()->IsFalling() && !bBlocking) && (bShiftKeyDown && (bMovingForward ||
+		bMovingRight)));
 }
-
 

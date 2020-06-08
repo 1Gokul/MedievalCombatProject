@@ -11,11 +11,11 @@
 UENUM(BlueprintType)
 enum class EMovementStatus : uint8
 {
-	EMS_Normal		UMETA(DisplayName = "Normal"),
-	EMS_Sprinting	UMETA(DisplayName = "Sprinting"),
-	EMS_Dead		UMETA(DisplayName = "Dead"),
+	EMS_Normal UMETA(DisplayName = "Normal"),
+	EMS_Sprinting UMETA(DisplayName = "Sprinting"),
+	EMS_Dead UMETA(DisplayName = "Dead"),
 
-	EMS_MAX			UMETA(DisplayName = "DefaultMAX")
+	EMS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
 /** The Character's Stamina States. Used for reducing stamina when sprinting. */
@@ -45,22 +45,22 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
 	bool bIsWeaponEquipped;
-	
+
 
 	/** The Shield that the Character is currently using */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
-		class AShield* EquippedShield;
+	class AShield* EquippedShield;
 
 	/** Gets set to the current Item whose CollisionVolume is currently being overlapped by the Character. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
 	class AItem* ActiveOverlappingItem;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
-		class AMainPlayerController* MainPlayerController;
+	class AMainPlayerController* MainPlayerController;
 
 	/** Location of the current Combat Target */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
-		FVector CombatTargetLocation;
+	FVector CombatTargetLocation;
 
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
@@ -86,7 +86,7 @@ public:
 	float CombatMaxWalkSpeed;
 
 	float CombatSprintingSpeed;
-	
+
 	float BlockingMaxWalkSpeed;
 
 	bool bShiftKeyDown;
@@ -101,18 +101,18 @@ public:
 
 	/**Camera boom positioning the camera behind the player. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class USpringArmComponent* CameraBoom;
+	class USpringArmComponent* CameraBoom;
 
 	/** Following Camera*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class UCameraComponent* FollowCamera;
+	class UCameraComponent* FollowCamera;
 
 	/**Base turn rates to scale turning function for the camera*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
-		float BaseTurnRate;
+	float BaseTurnRate;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
-		float BaseLookUpRate;
+	float BaseLookUpRate;
 
 	bool bInterpToEnemy;
 
@@ -131,7 +131,7 @@ public:
 	bool bFKeyDown;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
-		bool bAttacking;
+	bool bAttacking;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 	bool bInCombatMode;
@@ -150,27 +150,24 @@ public:
 	const float AttackComboSectionResetTime = 1.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
-		bool bBlocking;
+	bool bBlocking;
 
 	/** Anim Montage for Attacks*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-		class UAnimMontage* CombatMontage;
+	class UAnimMontage* CombatMontage;
 
 	/** Anim Montage for Sheathing, Drawing and Impacts */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
-		class UAnimMontage* UpperBodyMontage;
+	class UAnimMontage* UpperBodyMontage;
 
 	/** Particles emitted when the player gets hit */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-		class UParticleSystem* HitParticles;
+	class UParticleSystem* HitParticles;
 
 	/** Sound that gets emitted when the player gets hit */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat ")
-		class USoundCue* HitSound;
+	class USoundCue* HitSound;
 
-	 /** Fixed amount of distance the Player moves forward when AttackMove() is called. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackMovement")
-	float AttackMovementValue;
 
 	/** Used to make the Player reset back to the first attack animation if a timer limit(3s) is reached. */
 	FTimerHandle AttackTimerHandle;
@@ -179,7 +176,7 @@ public:
 	*	Player Stats
 	*
 	*/
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats")
 	float MaxHealth;
 
@@ -195,7 +192,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Stats")
 	int32 Coins;
 
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	class AEnemy* CombatTarget;
 
@@ -205,22 +202,24 @@ public:
 	/** TSubclass that specifies to GetOverlappingActors()
 	 *	to get overlapping actors of only type AEnemy. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat ")
-		TSubclassOf<AEnemy>EnemyFilter;
+	TSubclassOf<AEnemy> EnemyFilter;
 
 	UPROPERTY(EditDefaultsOnly, Category = "SavedData")
-		TSubclassOf<class AItemStorage> WeaponStorage;
+	TSubclassOf<class AItemStorage> WeaponStorage;
 
 	FVector OverlappingWeaponLocation;
+
+
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	/** Called to check certain conditions before allowing Player movement */
 	bool bCanMove(float Value);
@@ -262,7 +261,7 @@ public:
 	/** F: F Button*/
 	void FKeyUp();
 	void FKeyDown();
-	
+
 	void SheatheWeapon();
 	void DrawWeapon();
 
@@ -270,7 +269,7 @@ public:
 	*	@param Interp true or false depending on proximity to the Enemy
 	*/
 	void SetInterpToEnemy(bool Interp);
-	
+
 	void PlayMeleeAttack(int32 Section);
 
 	void ResetMeleeAttackComboSection();
@@ -286,15 +285,15 @@ public:
 	void BlockEnd();
 
 	void Impact(int32 Section);
-	
+
 	void BlockImpact(int32 Section);
 
 	//getters
 
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
-	
 
 	//setters
 
@@ -308,7 +307,7 @@ public:
 	void SetEquippedShield(AShield* ShieldToSet);
 
 	FORCEINLINE void SetActiveOverlappingItem(AItem* ItemToSet) { ActiveOverlappingItem = ItemToSet; }
-																					  
+
 	FORCEINLINE void SetCombatTarget(AEnemy* Target) { CombatTarget = Target; }
 
 	FORCEINLINE void SetHasCombatTarget(bool HasTarget) { bHasCombatTarget = HasTarget; }
@@ -318,16 +317,16 @@ public:
 
 	/** Called to increment coin count of player if they pick up a coin/coins */
 	UFUNCTION(BlueprintCallable)
-	void IncrementCoins(int32 Amount);	
+	void IncrementCoins(int32 Amount);
 
 	/** Called to increase health of player if they take pick up a health potion */
 	UFUNCTION(BlueprintCallable)
 	void IncrementHealth(float Amount);
-	
-/** Takes the location of the target and returns how 
-	*	much the player has to rotate to orient it to the target. */
+
+	/** Takes the location of the target and returns how 
+		*	much the player has to rotate to orient it to the target. */
 	FRotator GetLookAtRotationYaw(FVector Target);
-	
+
 	/** Pressed down to enable sprinting*/
 	void ShiftKeyDown();
 
@@ -338,13 +337,13 @@ public:
 	void PlaySwingSound();
 
 
-	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, 
-							class AController* EventInstigator, AActor* DamageCauser) override;
+	float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	                 class AController* EventInstigator, AActor* DamageCauser) override;
 
 	UFUNCTION(BlueprintCallable)
 	void DeathEnd();
 
-	virtual void Jump() override;
+	void Jump() override;
 
 	void UpdateCombatTarget();
 
@@ -362,4 +361,3 @@ public:
 
 	
 };
-

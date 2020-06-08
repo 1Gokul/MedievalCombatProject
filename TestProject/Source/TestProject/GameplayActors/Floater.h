@@ -10,54 +10,53 @@ UCLASS()
 class TESTPROJECT_API AFloater : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AFloater();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Actor Mesh Components")
-		UStaticMeshComponent* StaticMesh = nullptr;
+	UStaticMeshComponent* StaticMesh = nullptr;
 
 	//Vector Location where the Floater will be placed when the game starts
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Floater Variables")
-		FVector InitialLocation = FVector(0.0f, 0.0f, 0.0f);
+	FVector InitialLocation = FVector(0.0f, 0.0f, 0.0f);
 
 	//Location of the floater when it was dragged into the editor
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "Floater Variables")
-		FVector PlacedLocation;
+	FVector PlacedLocation;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Floater Variables")
-		FVector WorldOrigin;
+	FVector WorldOrigin;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Floater Variables")
-		FVector InitialDirection;
+	FVector InitialDirection;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Floater Variables")
-		bool bShouldFloat;
+	bool bShouldFloat;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Floater Variables")
-		bool bInitializeFloaterLocation;
+	bool bInitializeFloaterLocation;
 
 private:
 
 	float RunningTime;
 
 	UPROPERTY(EditAnywhere, Category = "Floater Variables | Wave Parameters")
-		float Amplitude;
+	float Amplitude;
 
 	UPROPERTY(EditAnywhere, Category = "Floater Variables | Wave Parameters")
-		float TimePeriod;
+	float TimePeriod;
 
 	UPROPERTY(EditAnywhere, Category = "Floater Variables | Wave Parameters")
-		float StartingPosition;
-	
+	float StartingPosition;
+
 
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
+	void Tick(float DeltaTime) override;
 };

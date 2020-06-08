@@ -15,14 +15,13 @@ class TESTPROJECT_API AMainPlayerController : public APlayerController
 	GENERATED_BODY()
 
 
-
 protected:
 
-	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
-	
+	void BeginPlay() override;
+	void Tick(float DeltaTime) override;
+
 public:
-	
+
 	/** Reference to the UMG asset in the editor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> HUDOverlayAsset;
@@ -34,10 +33,10 @@ public:
 	/** For Enemy health bar */
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-		TSubclassOf<UUserWidget> WEnemyHealthBar;
+	TSubclassOf<UUserWidget> WEnemyHealthBar;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
-		UUserWidget* EnemyHealthBar;
+	UUserWidget* EnemyHealthBar;
 
 	bool bEnemyHealthBarVisible;
 
@@ -49,10 +48,10 @@ public:
 	/** Pause Menu*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-		TSubclassOf<UUserWidget> WPauseMenu;
+	TSubclassOf<UUserWidget> WPauseMenu;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
-		UUserWidget* PauseMenu;
+	UUserWidget* PauseMenu;
 
 	bool bPauseMenuVisible;
 

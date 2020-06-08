@@ -8,11 +8,12 @@
 
 
 UENUM(BlueprintType)
-enum class EShieldState : uint8 {
-	ESS_Pickup		UMETA(DisplayName = "Pickup"),
-	ESS_Equipped	UMETA(DisplayName = "Equipped"),
+enum class EShieldState : uint8
+{
+	ESS_Pickup UMETA(DisplayName = "Pickup"),
+	ESS_Equipped UMETA(DisplayName = "Equipped"),
 
-	ESS_MAX			UMETA(DisplayName = "DefaultMAX")
+	ESS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
 /**
@@ -41,28 +42,30 @@ public:
 	USoundCue* BlockSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Block")
-		float BlockStaminaCost;
+	float BlockStaminaCost;
 
 	/** Particles emitted when the shield gets hit */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Block")
 	class UParticleSystem* HitParticles;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items | Block")
-		AController* ShieldInstigator;
+	AController* ShieldInstigator;
 
 	FName HitSocketName;
 
 protected:
 
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
 public:
 
 	/**Called if an Overlap Event starts. */
-	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
+	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	                    int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
 
 	/** Called when the Overlap Event ends. */
-	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
+	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	                  int32 OtherBodyIndex) override;
 
 	/** Below two functions are similar to the above OnOverlapBegin and End,
 	*	but they are not overriden as they are for the Combat Collision Box
@@ -71,6 +74,8 @@ public:
 	void Equip(class AMain* Char);
 
 	FORCEINLINE void SetShieldState(EShieldState State) { ShieldState = State; }
+
 	FORCEINLINE EShieldState GetShieldState() { return ShieldState; }
+
 	FORCEINLINE void SetInstigator(AController* Instigator) { ShieldInstigator = Instigator; }
 };

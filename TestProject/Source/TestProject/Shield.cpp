@@ -10,75 +10,79 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Enemy.h"
 
-AShield::AShield() {
-
-
+AShield::AShield()
+{
 	ShieldState = EShieldState::ESS_Pickup;
 
 	BlockStaminaCost = 30.0f;
 
 	HitSocketName = "ImpactSocket";
-
 }
 
 void AShield::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
-void AShield::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AShield::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                             UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                             const FHitResult& SweepResult)
 {
 	Super::OnOverlapBegin(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	if ((ShieldState == EShieldState::ESS_Pickup) && OtherActor) {
+	if ((ShieldState == EShieldState::ESS_Pickup) && OtherActor)
+	{
 		AMain* Main = Cast<AMain>(OtherActor);
 
-		if (Main) {
+		if (Main)
+		{
 			Main->SetActiveOverlappingItem(this);
 		}
 	}
 }
 
-void AShield::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AShield::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+                           int32 OtherBodyIndex)
 {
 	Super::OnOverlapEnd(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 
-	if (OtherActor) {
+	if (OtherActor)
+	{
 		AMain* Main = Cast<AMain>(OtherActor);
 
-		if (Main) {
+		if (Main)
+		{
 			Main->SetActiveOverlappingItem(nullptr);
 		}
 	}
 }
 
 
-
-
 void AShield::Equip(AMain* Char)
 {
-	if (Char) {
-
+	if (Char)
+	{
 		Char->bInCombatMode = true;
-		
+
 		SetInstigator(Char->GetController());
-		StaticMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-		StaticMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+		StaticMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		StaticMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
 		StaticMesh->SetSimulatePhysics(false);
 
 		const USkeletalMeshSocket* LeftHandSocket = Char->GetMesh()->GetSocketByName("LeftHandSocket");
 
 
-		if (LeftHandSocket) {
+		if (LeftHandSocket)
+		{
 			LeftHandSocket->AttachActor(this, Char->GetMesh());
 			bShouldRotate = false;
 			Char->SetEquippedShield(this);
 			Char->SetActiveOverlappingItem(nullptr);
 		}
 
-		if (OnEquipSound) {
+		if (OnEquipSound)
+		{
 			UGameplayStatics::PlaySound2D(this, OnEquipSound);
 		}
 	}
