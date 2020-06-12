@@ -178,6 +178,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat ")
 	class USoundCue* HitSound;
 
+	TArray<FName>HitSocketNames;
 
 	/** Used to make the Player reset back to the first attack animation if a timer limit(3s) is reached. */
 	FTimerHandle AttackTimerHandle;

@@ -117,11 +117,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TSubclassOf<UDamageType> DamageTypeClass;
 
-	/** Socket names based on Attack Names*/
-
-	FName CurrentAttackTipSocket;
-	FName Attack1_TipSocket;
-	FName Attack2_TipSocket;
+	
+	
 
 protected:
 	// Called when the game starts or when spawned

@@ -55,10 +55,6 @@ AEnemy::AEnemy()
 
 	DeathDelay = 3.0f;
 
-	CurrentAttackTipSocket = FName("");
-	Attack1_TipSocket = FName("RightTipSocket");
-	Attack2_TipSocket = FName("LeftTipSocket");
-
 	AttackSection = -1;
 
 	bInterpToEnemy = false;
@@ -263,7 +259,14 @@ void AEnemy::InflictDamageOnMain(AMain* Char, bool bHitFromBehind)
 	//If Character was hit from behind
 	if (bHitFromBehind)
 	{
-		Char->Impact(0);
+		Char->Impact(1);
+
+		/**
+		 * First 2 Attack Sockets in Main's SocketNames are the names of the Sockets that will be used
+		 * if the Player gets hit by the Enemy facing them. By adding 4, we get the Sockets that will be used if
+		 * the Player gets hit by the Enemy facing their back.	See below in if(Char->HitParticles) to understand
+		 */
+		AttackSection += 4;
 	}
 
 		//If Character was hit while facing the attacking Enemy
@@ -275,7 +278,21 @@ void AEnemy::InflictDamageOnMain(AMain* Char, bool bHitFromBehind)
 
 	if (Char->HitParticles)
 	{
-		const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(CurrentAttackTipSocket);
+		/**
+		 *First two Attack Sections are 1&2. Hence Ceiling of any of these divided by 2 = 1. HitSocketNames[1] gives "BodyFrontHitSocket".
+		 *Similarly for either of 3&4, Ceiling divided by 2 = 2. HitSocketNames[2] gives "HeadFrontHitSocket".
+		 *For rear hits, ceiling of either (1+4)&(2+4) i.e either 5&6 divided by 2 gives 3. HitSocketNames[3] gives "HeadFrontHitSocket"
+		 *Similarly HitSocketNames[4] gives "HeadRearHitSocket"
+		 */
+
+		UE_LOG(LogTemp, Warning, TEXT("BEFORE ENEMY ATTACK SECTION = %i"), AttackSection);
+		
+		AttackSection = FMath::CeilToFloat(static_cast<float>(AttackSection)/2.0f);
+
+		UE_LOG(LogTemp, Warning, TEXT("AFTER	ENEMY ATTACK SECTION = %i"), AttackSection);
+
+		//Array indexes start at 0
+		const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(Char->HitSocketNames[AttackSection - 1]);
 
 		if (TipSocket)
 		{
@@ -333,7 +350,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 					{
 						Char->Stamina -= Char->EquippedShield->BlockStaminaCost;
 
-						int32 Section = FMath::RandRange(0, 2);
+						int32 Section = FMath::RandRange(1, 3);
 
 						//Character Shield Block Impact Animation
 						Char->BlockImpact(Section);
@@ -364,7 +381,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 
 						Char->Stamina -= Char->CurrentWeapon->BlockStaminaCost;
 
-						int32 Section = FMath::RandRange(3, 5);
+						int32 Section = FMath::RandRange(4, 6);
 
 						//Character Weapon Block Impact Animation
 						Char->BlockImpact(Section);  // +3 because first 3 attack sections are for shield blocking
@@ -475,21 +492,26 @@ void AEnemy::Attack()
 
 			if (AnimInstance)
 			{
-				//Randomly choose between the 2 attack animations
-				AttackSection = FMath::RandRange(0, 2);
+				//Randomly choose between the 4 attack animations
+				AttackSection = FMath::RandRange(1, 4);
 
-				switch (AttackSection)
+				FString AttackName("Attack_");
+				AttackName.AppendInt(AttackSection);
+
+				AnimInstance->Montage_Play(CombatMontage, 1.0f);
+				AnimInstance->Montage_JumpToSection(FName(*AttackName), CombatMontage);
+
+			/*	switch (AttackSection)
 				{
 				case 0:
 					AnimInstance->Montage_Play(CombatMontage, 1.0f);
 					AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
-					CurrentAttackTipSocket = Attack1_TipSocket;
+					
 					break;
 
 				case 1:
 					AnimInstance->Montage_Play(CombatMontage, 1.0f);
 					AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
-					CurrentAttackTipSocket = Attack2_TipSocket;
 					break;
 
 				case 2:
@@ -500,7 +522,7 @@ void AEnemy::Attack()
 
 				default:
 					break;
-				}
+				}*/
 			}
 		}
 	}

@@ -107,6 +107,12 @@ AMain::AMain()
 	MinSprintStamina = 50.0f;
 
 	InterpSpeed = 15.0f;
+
+	HitSocketNames.Add("BodyFrontHitSocket");
+	HitSocketNames.Add("HeadFrontHitSocket");
+	HitSocketNames.Add("BodyRearHitSocket");
+	HitSocketNames.Add("HeadRearHitSocket");
+
 }
 
 // Called when the game starts or when spawned
@@ -845,8 +851,6 @@ void AMain::BlockEnd()
 
 void AMain::Impact(int32 Section)
 {
-	Section += 1;
-
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	if (AnimInstance && UpperBodyMontage)
@@ -864,8 +868,7 @@ void AMain::Impact(int32 Section)
 
 void AMain::BlockImpact(int32 Section)
 {
-	Section += 1;
-
+	
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	if (AnimInstance && UpperBodyMontage)
