@@ -89,6 +89,10 @@ public:
 
 	float BlockingMaxWalkSpeed;
 
+	float CrouchedMaxWalkSpeed;
+
+	float CrouchedCombatMaxWalkSpeed;
+
 	bool bShiftKeyDown;
 
 	/** Player Movement*/
@@ -130,11 +134,17 @@ public:
 	/** F: F Button*/
 	bool bFKeyDown;
 
+	/** Ctrl button*/
+	bool bCtrlDown;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 	bool bAttacking;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 	bool bInCombatMode;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
+	bool bCrouched;
 
 	/** Sections of the Combat Montage that will play when the Player attacks. */
 	int32 AttackComboSection;
@@ -262,6 +272,21 @@ public:
 	void FKeyUp();
 	void FKeyDown();
 
+	/** Ctrl Key*/
+	void CtrlUp();
+	void CtrlDown();
+
+	/** Make the Character crouch smoothly using Blueprints. */
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Crouching")
+	void PlayerCrouch();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Crouching")
+	void PlayerUnCrouch();
+
+	UFUNCTION(BlueprintCallable, Category = "Crouching")
+	void CrouchEnd();
+
 	void SheatheWeapon();
 	void DrawWeapon();
 
@@ -269,7 +294,7 @@ public:
 	*	@param Interp true or false depending on proximity to the Enemy
 	*/
 	void SetInterpToEnemy(bool Interp);
-
+	
 	void PlayMeleeAttack(int32 Section);
 
 	void ResetMeleeAttackComboSection();
@@ -358,6 +383,4 @@ public:
 	void LoadGameNoSwitch();
 
 	bool CanCheckStaminaStatus();
-
-	
 };

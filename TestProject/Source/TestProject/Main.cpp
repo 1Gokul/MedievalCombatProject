@@ -74,6 +74,8 @@ AMain::AMain()
 	CombatMaxWalkSpeed = 450.0f;
 	CombatSprintingSpeed = 700.0f;
 	BlockingMaxWalkSpeed = 150.0f;
+	CrouchedMaxWalkSpeed = 200.0f;
+	CrouchedCombatMaxWalkSpeed = 150.0f;
 
 	OverlappingWeaponLocation = FVector(0.0, 0.0, 0.0);
 
@@ -81,14 +83,17 @@ AMain::AMain()
 	bLMBDown = false;
 	bRMBDown = false;
 	bFKeyDown = false;
+	bCtrlDown = false;
 	bInCombatMode = false;
 	bAttacking = false;
 	bBlocking = false;
+	bCrouched = false;
 	bHasCombatTarget = false;
 	bMovingForward = false;
 	bMovingRight = false;
 	bJumping = false;
 	bInterpToEnemy = false;
+
 
 	bIsWeaponEquipped = false;
 
@@ -158,7 +163,7 @@ void AMain::Tick(float DeltaTime)
 				Stamina -= DeltaStamina;
 			}
 
-			if ((bMovingForward || bMovingRight) && (!bBlocking))
+			if ((bMovingForward || bMovingRight) && (!bBlocking) && (!GetCharacterMovement()->IsCrouching()))
 			{
 				SetMovementStatus(EMovementStatus::EMS_Sprinting);
 			}
@@ -194,7 +199,7 @@ void AMain::Tick(float DeltaTime)
 			else
 			{
 				Stamina -= DeltaStamina;
-				if ((bMovingForward || bMovingRight) && (!bBlocking))
+				if ((bMovingForward || bMovingRight) && (!bBlocking) && (!GetCharacterMovement()->IsCrouching()))
 				{
 					SetMovementStatus(EMovementStatus::EMS_Sprinting);
 				}
@@ -302,6 +307,9 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	PlayerInputComponent->BindAction("CombatMode", IE_Pressed, this, &AMain::FKeyDown);
 	PlayerInputComponent->BindAction("CombatMode", IE_Released, this, &AMain::FKeyUp);
+
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AMain::CtrlDown);
+	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AMain::CtrlUp);
 }
 
 bool AMain::bCanMove(float Value)
@@ -470,24 +478,49 @@ void AMain::RMBDown()
 	/** else if Player already has a shield equipped AND
 	*	is not already attacking, perform a Block.
 	*/
-	if (bInCombatMode && !bAttacking && MovementStatus != EMovementStatus::EMS_Dead)
+	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Dead)
 	{
 		//Blocking with a Weapon should only be allowed if the weapon is Two-Handed.
 		if (CurrentWeapon && !EquippedShield)
 		{
 			if (CurrentWeapon->bIsTwoHanded)
 			{
-				if (!bBlocking)
+				UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+				if (MainAnimInstance)
 				{
-					bBlocking = true;
+					//If Player is not currently falling
+					if (!MainAnimInstance->bIsInAir)
+					{
+						if (bInCombatMode)
+						{
+							if (!bBlocking)
+							{
+								bBlocking = true;
+							}
+						}
+						else bInCombatMode = true;
+					}
 				}
 			}
 		}
 		else
 		{
-			if (!bBlocking)
+			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+			
+			if (MainAnimInstance)
 			{
-				bBlocking = true;
+				//If Player is not currently falling
+				if (!MainAnimInstance->bIsInAir)
+				{
+					if (bInCombatMode)
+					{
+						if (!bBlocking)
+						{
+							bBlocking = true;
+						}
+					}
+					else bInCombatMode = true;
+				}
 			}
 		}
 	}
@@ -514,6 +547,18 @@ void AMain::FKeyUp()
 	bFKeyDown = false;
 }
 
+void AMain::CrouchEnd()
+{
+	if (GetCharacterMovement()->IsCrouching())
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Crouch();
+	}
+}
+
 void AMain::SheatheWeapon()
 {
 	bInCombatMode = false;
@@ -531,8 +576,9 @@ void AMain::SheatheWeapon()
 		{
 			AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 
-			if (CurrentWeapon->bIsTwoHanded)AnimInstance->Montage_JumpToSection(
-				FName("SheatheWeapon_TwoHanded"), UpperBodyMontage);
+			if (CurrentWeapon->bIsTwoHanded)
+				AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_TwoHanded"), UpperBodyMontage);
+			
 			else AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_OneHanded"), UpperBodyMontage);
 		}
 	}
@@ -553,8 +599,8 @@ void AMain::DrawWeapon()
 		{
 			AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 
-			if (CurrentWeapon->bIsTwoHanded)AnimInstance->Montage_JumpToSection(
-				FName("DrawWeapon_TwoHanded"), UpperBodyMontage);
+			if (CurrentWeapon->bIsTwoHanded)
+				AnimInstance->Montage_JumpToSection(FName("DrawWeapon_TwoHanded"), UpperBodyMontage);
 			else AnimInstance->Montage_JumpToSection(FName("DrawWeapon_OneHanded"), UpperBodyMontage);
 		}
 	}
@@ -565,7 +611,7 @@ void AMain::FKeyDown()
 	bFKeyDown = true;
 
 	/** If already in Combat Mode, switch back to Normal Mode and Sheathe the Weapon, if equipped. */
-	if (bInCombatMode)
+	if (bInCombatMode && !bBlocking)
 	{
 		SheatheWeapon();
 	}
@@ -577,11 +623,39 @@ void AMain::FKeyDown()
 	}
 }
 
+void AMain::CtrlUp()
+{
+	bCtrlDown = false;
+}
+
+void AMain::CtrlDown()
+{
+	bCtrlDown = true;
+
+	if (GetCharacterMovement()->IsCrouching())
+	{
+		bCrouched = false;
+
+		PlayerUnCrouch();
+
+		GetCapsuleComponent()->SetCapsuleRadius(36.0);
+	}
+	else
+	{
+		bCrouched = true;
+
+		PlayerCrouch();
+
+		GetCapsuleComponent()->SetCapsuleRadius(60.0);
+	}
+}
+
 
 void AMain::SetInterpToEnemy(bool Interp)
 {
 	bInterpToEnemy = Interp;
 }
+
 
 void AMain::PlayMeleeAttack(int32 Section)
 {
@@ -591,58 +665,82 @@ void AMain::PlayMeleeAttack(int32 Section)
 	//Attack Sections start from 1
 	Section += 1;
 
-	if (Section > 0 && Section < 4)
+
+	if (AnimInstance && CombatMontage)
 	{
-		if (AnimInstance && CombatMontage)
+		if (CurrentWeapon)CurrentWeapon->MainAttackSection = Section;
+
+
+		FString AttackName;
+
+		//Append Section number
+
+		//If Weapon attack
+		if (bIsWeaponEquipped)
 		{
-			if (CurrentWeapon)CurrentWeapon->MainAttackSection = Section;
+			if (CurrentWeapon->bIsTwoHanded)AttackName.Append("TwoHandedAttack_");
+			else AttackName.Append("OneHandedAttack_");
 
-			//Get a random Final Combo Attack (Ranges from Attack_3 to Attack_5)
-			if (Section == 3)Section += FMath::RandRange(0, 2);
-
-			FString AttackName;
-
-			//Append Section number
-
-			//If Weapon attack
-			if (bIsWeaponEquipped)
+			if (!bCrouched)
 			{
-				if (CurrentWeapon->bIsTwoHanded)AttackName.Append("TwoHandedAttack_");
-				else AttackName.Append("OneHandedAttack_");
+				//Get a random Final Combo Attack (Ranges from Attack_3 to Attack_5)
+				if (Section == 3)Section += FMath::RandRange(0, 2);
+			}
+			else
+			{	//Only one Section for crouched attacks
+				Section = 1;
+				AttackName.Append("Crouched_");
+			}
+		}
+			//else if melee attack
+		else
+		{
+			//If Player has a Shield equipped, play the even-numbered attacks only.
+			if (EquippedShield)
+			{
+				//Override Section
+				Section = FMath::RandRange(2, 4);
+				if (Section % 2)Section -= 1;	//Set Section to play the 2nd Animation if RandRange returns 3.
 			}
 
-				//else if melee attack
-			else AttackName.Append("MeleeAttack_");
-
-			AttackName.AppendInt(Section);
-
-			UE_LOG(LogTemp, Warning, TEXT("Attack = %s"), *AttackName);
-
-			//Play Montage
-			AnimInstance->Montage_Play(CombatMontage, 1.0f);
-			AnimInstance->Montage_JumpToSection(*AttackName, CombatMontage);
-
-			/*	switch (Section) {
-		
-				case 0:
-					AnimInstance->Montage_Play(CombatMontage, 2.20f);
-					AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
-					break;
-		
-				case 1:
-					AnimInstance->Montage_Play(CombatMontage, 1.80f);
-					AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
-					break;
-		
-				case 2:
-					AnimInstance->Montage_Play(CombatMontage, 1.80f);
-					AnimInstance->Montage_JumpToSection(FName("Attack_3"), CombatMontage);
-					break;
-		
-				default:
-					break;
-				} */
+			AttackName.Append("MeleeAttack_");
 		}
+
+
+		/*	if (GetCharacterMovement()->IsCrouching())
+			{
+				AttackName.Append("Crouched_");
+				Section = 1;
+			}*/
+
+		AttackName.AppendInt(Section);
+
+		UE_LOG(LogTemp, Warning, TEXT("Attack = %s"), *AttackName);
+
+		//Play Montage
+		AnimInstance->Montage_Play(CombatMontage, 1.0f);
+		AnimInstance->Montage_JumpToSection(*AttackName, CombatMontage);
+
+		/*	switch (Section) {
+	
+			case 0:
+				AnimInstance->Montage_Play(CombatMontage, 2.20f);
+				AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
+				break;
+	
+			case 1:
+				AnimInstance->Montage_Play(CombatMontage, 1.80f);
+				AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
+				break;
+	
+			case 2:
+				AnimInstance->Montage_Play(CombatMontage, 1.80f);
+				AnimInstance->Montage_JumpToSection(FName("Attack_3"), CombatMontage);
+				break;
+	
+			default:
+				break;
+			} */
 	}
 }
 
@@ -832,12 +930,16 @@ void AMain::SetMovementStatus(EMovementStatus Status)
 	}
 	else if (bInCombatMode)
 	{
-		GetCharacterMovement()->MaxWalkSpeed = CombatMaxWalkSpeed;
+		if (GetCharacterMovement()->IsCrouching())
+			GetCharacterMovement()->MaxWalkSpeedCrouched =
+				CrouchedCombatMaxWalkSpeed;
+		else GetCharacterMovement()->MaxWalkSpeed = CombatMaxWalkSpeed;
 	}
 
 	else
 	{
-		GetCharacterMovement()->MaxWalkSpeed = RunningSpeed;
+		if (GetCharacterMovement()->IsCrouching())GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchedMaxWalkSpeed;
+		else GetCharacterMovement()->MaxWalkSpeed = RunningSpeed;
 	}
 }
 
@@ -1135,7 +1237,7 @@ void AMain::LoadGameNoSwitch()
 
 bool AMain::CanCheckStaminaStatus()
 {
-	return ((!GetMovementComponent()->IsFalling() && !bBlocking) && (bShiftKeyDown && (bMovingForward ||
-		bMovingRight)));
+	return ((!GetMovementComponent()->IsFalling() && !bBlocking && !GetCharacterMovement()->IsCrouching()) && (
+		bShiftKeyDown && (bMovingForward ||
+			bMovingRight)));
 }
-
