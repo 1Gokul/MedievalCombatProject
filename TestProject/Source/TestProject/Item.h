@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Item.generated.h"
 
-UCLASS()
+UCLASS(Abstract, BlueprintType, Blueprintable)
 class TESTPROJECT_API AItem : public AActor
 {
 	GENERATED_BODY()
@@ -15,6 +15,10 @@ public:
 	// Sets default values for this actor's properties
 	AItem();
 
+	UPROPERTY(Transient)
+	class UWorld* World;
+	
+
 	/** Base shape collision*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Collision")
 	class USphereComponent* CollisionVolume;
@@ -22,6 +26,26 @@ public:
 	/**Item mesh*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Mesh")
 	class UStaticMeshComponent* StaticMesh;
+
+	/** The Text for using the Item i.e "Eat", "Equip" etc. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
+	FName UseActionText;
+
+	/** The thumbnail for this item in the menu*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	class UTexture2D* Thumbnail;
+
+	/** The display name for this item in the inventory */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
+	FName ItemDisplayName;
+
+	/** Optional description of the item */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info", meta = (MultiLine = true))
+	FString ItemDescription;
+
+	/** The weight of the item */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info", meta = (ClampMin = 0.0))
+	float Weight;
 
 	/** Particle Component when the item is idle and has not been picked up */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
@@ -43,6 +67,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | ItemProperties")
 	float RotationRate;
 
+	/** The Inventory that owns this item */
+	UPROPERTY()
+	class UInventoryComponent* OwningInventory;
+
+	
 protected:
 	// Called when the game starts or when spawned
 	void BeginPlay() override;
@@ -61,4 +90,14 @@ public:
 	UFUNCTION()
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	                          UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	virtual void Use(class AMain* Main) PURE_VIRTUAL(AItem, );
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnUse(AMain* Main);
+
+	virtual class UWorld* ItemGetWorld() const {return World;};
+	
 };
+
+

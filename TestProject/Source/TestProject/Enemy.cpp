@@ -12,7 +12,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Engine/SkeletalMeshSocket.h"
+#include "Engine/SkeletalMeshSocket.h"																		   
 #include "Sound/SoundCue.h"
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
@@ -215,9 +215,9 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 
 			if (Main->MainPlayerController)
 			{
-				USkeletalMeshComponent* MainMesh = Cast<USkeletalMeshComponent>(OtherComp);
+				USkeletalMeshComponent* CharMesh = Cast<USkeletalMeshComponent>(OtherComp);
 
-				if (MainMesh)
+				if (CharMesh)
 				{
 					Main->MainPlayerController->RemoveEnemyHealthBar();
 				}
@@ -254,17 +254,17 @@ void AEnemy::MoveToTarget(AMain* Target)
 }
 
 
-void AEnemy::InflictDamageOnMain(AMain* Char, bool bHitFromBehind)
+void AEnemy::InflictDamageOnMain(AMain* Main, bool bHitFromBehind)
 {
 	//If Character was hit from behind
 	if (bHitFromBehind)
 	{
-		Char->Impact(1);
+		Main->Impact(1);
 
 		/**
 		 * First 2 Attack Sockets in Main's SocketNames are the names of the Sockets that will be used
 		 * if the Player gets hit by the Enemy facing them. By adding 4, we get the Sockets that will be used if
-		 * the Player gets hit by the Enemy facing their back.	See below in if(Char->HitParticles) to understand
+		 * the Player gets hit by the Enemy facing their back.	See below in if(Main->HitParticles) to understand
 		 */
 		AttackSection += 4;
 	}
@@ -273,47 +273,26 @@ void AEnemy::InflictDamageOnMain(AMain* Char, bool bHitFromBehind)
 	else
 	{
 		//int32 Section = FMath::RandRange(1, 3);
-		Char->Impact(AttackSection + 1);
+		Main->Impact(AttackSection + 1);
 	}
 
-	if (Char->HitParticles)
+	if (Main->HitParticles)
 	{
-		/**
-		 *First two Attack Sections are 1&2. Hence Ceiling of any of these divided by 2 = 1. HitSocketNames[1] gives "BodyFrontHitSocket".
-		 *Similarly for either of 3&4, Ceiling divided by 2 = 2. HitSocketNames[2] gives "HeadFrontHitSocket".
-		 *For rear hits, ceiling of either (1+4)&(2+4) i.e either 5&6 divided by 2 gives 3. HitSocketNames[3] gives "HeadFrontHitSocket"
-		 *Similarly HitSocketNames[4] gives "HeadRearHitSocket"
-		 */
-
-		UE_LOG(LogTemp, Warning, TEXT("BEFORE ENEMY ATTACK SECTION = %i"), AttackSection);
-		
-		AttackSection = FMath::CeilToFloat(static_cast<float>(AttackSection)/2.0f);
-
-		UE_LOG(LogTemp, Warning, TEXT("AFTER	ENEMY ATTACK SECTION = %i"), AttackSection);
-
-		//Array indexes start at 0
-		const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(Char->HitSocketNames[AttackSection - 1]);
-
-		if (TipSocket)
-		{
-			FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Char->HitParticles, SocketLocation,
-			                                         FRotator(0.0f), true);
-		}
+		Main->SpawnHitParticles(this);
 	}
-	if (Char->HitSound)
+	if (Main->HitSound)
 	{
-		UGameplayStatics::PlaySound2D(this, Char->HitSound);
+		UGameplayStatics::PlaySound2D(this, Main->HitSound);
 	}
 	if (DamageTypeClass)
 	{
-		UGameplayStatics::ApplyDamage(Char, Damage, AIController, this, DamageTypeClass);
+		UGameplayStatics::ApplyDamage(Main, Damage, AIController, this, DamageTypeClass);
 	}
 
 	//In case the Player's attack was interrupted
-	Char->bAttacking = false;
+	Main->bAttacking = false;
 
-	Char->bInterpToEnemy = false;
+	Main->bInterpToEnemy = false;
 }
 
 void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -322,17 +301,17 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 {
 	if (OtherActor)
 	{
-		AMain* Char = Cast<AMain>(OtherActor);
+		AMain* Main = Cast<AMain>(OtherActor);
 
-		if (Char)
+		if (Main)
 		{
 			//Check if the player is facing the Enemy
-			FVector MainLocation = Char->GetActorLocation();
+			FVector MainLocation = Main->GetActorLocation();
 			FVector EnemyLocation = GetActorLocation();
 
 			FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(MainLocation, EnemyLocation);
 
-			FRotator MainRotation = Char->GetActorRotation();
+			FRotator MainRotation = Main->GetActorRotation();
 
 			FRotator DeltaRotator = UKismetMathLibrary::NormalizedDeltaRotator(MainRotation, LookAtRotation);
 
@@ -340,67 +319,67 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 			bool bAngleCheck1 = UKismetMathLibrary::InRange_FloatFloat(DeltaRotator.Yaw, -180, -60);
 			bool bAngleCheck2 = UKismetMathLibrary::InRange_FloatFloat(DeltaRotator.Yaw, 60, 180);
 
-			if (Char->bBlocking)
+			if (Main->bBlocking)
 			{
 				//If facing the Enemy
 				if (!(bAngleCheck1 || bAngleCheck2))
 				{
 					//If Player is blocking with shield and has enough stamina to successfully block an attack  
-					if (Char->EquippedShield && Char->Stamina - Char->EquippedShield->BlockStaminaCost >= 0)
+					if (Main->EquippedShield && Main->Stamina - Main->EquippedShield->BlockStaminaCost >= 0)
 					{
-						Char->Stamina -= Char->EquippedShield->BlockStaminaCost;
+						Main->Stamina -= Main->EquippedShield->BlockStaminaCost;
 
 						int32 Section = FMath::RandRange(1, 3);
 
 						//Character Shield Block Impact Animation
-						Char->BlockImpact(Section);
+						Main->BlockImpact(Section);
 
-						if (Char->EquippedShield->BlockSound)
+						if (Main->EquippedShield->BlockSound)
 						{
-							UGameplayStatics::PlaySound2D(this, Char->EquippedShield->BlockSound);
+							UGameplayStatics::PlaySound2D(this, Main->EquippedShield->BlockSound);
 						}
 
-						if (Char->EquippedShield->HitParticles)
+						if (Main->EquippedShield->HitParticles)
 						{
-							FVector SocketLocation = Char->EquippedShield->StaticMesh->GetSocketLocation(
-								Char->EquippedShield->HitSocketName);
-							UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Char->EquippedShield->HitParticles,
+							FVector SocketLocation = Main->EquippedShield->StaticMesh->GetSocketLocation(
+								Main->EquippedShield->HitSocketName);
+							UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Main->EquippedShield->HitParticles,
 							                                         SocketLocation, FRotator(0.0f), true);
 						}
 					}
 
 						//If Player is blocking with weapon and has enough stamina to successfully block an attack
-					else if (Char->bIsWeaponEquipped && Char->Stamina - Char->CurrentWeapon->BlockStaminaCost >= 0)
+					else if (Main->bIsWeaponEquipped && Main->Stamina - Main->CurrentWeapon->BlockStaminaCost >= 0)
 					{
 						//Weapons don't block attacks completely
 						if (DamageTypeClass)
 						{
-							UGameplayStatics::ApplyDamage(Char, DamageIfBlocked, AIController, this,
+							UGameplayStatics::ApplyDamage(Main, DamageIfBlocked, AIController, this,
 							                              DamageTypeClass);
 						}
 
-						Char->Stamina -= Char->CurrentWeapon->BlockStaminaCost;
+						Main->Stamina -= Main->CurrentWeapon->BlockStaminaCost;
 
 						int32 Section = FMath::RandRange(4, 6);
 
 						//Character Weapon Block Impact Animation
-						Char->BlockImpact(Section);  // +3 because first 3 attack sections are for shield blocking
+						Main->BlockImpact(Section);  // +3 because first 3 attack sections are for shield blocking
 
-						if (Char->CurrentWeapon->BlockSound)
+						if (Main->CurrentWeapon->BlockSound)
 						{
-							UGameplayStatics::PlaySound2D(this, Char->CurrentWeapon->BlockSound);
+							UGameplayStatics::PlaySound2D(this, Main->CurrentWeapon->BlockSound);
 						}
 
-						if (Char->CurrentWeapon->HitParticles)
+						if (Main->CurrentWeapon->HitParticles)
 						{
 							const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(
-								Char->CurrentWeapon->HitSocketName);
+								Main->CurrentWeapon->HitSocketName);
 
 							if (TipSocket)
 							{
 								FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
 								UGameplayStatics::SpawnEmitterAtLocation(
-									GetWorld(), Char->CurrentWeapon->HitParticles, SocketLocation,
+									GetWorld(), Main->CurrentWeapon->HitParticles, SocketLocation,
 									FRotator(0.0f), true);
 							}
 						}
@@ -409,19 +388,19 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 						//If Player does not have enough stamina to successfully block an attack
 					else
 					{
-						InflictDamageOnMain(Char, false);
+						InflictDamageOnMain(Main, false);
 					}
 				}
 				else
 				{
 					//If not facing the Enemy
-					InflictDamageOnMain(Char, true);
+					InflictDamageOnMain(Main, true);
 				}
 			}
 
 			else
 			{	//If not blocking
-				InflictDamageOnMain(Char, (bAngleCheck1 || bAngleCheck2));
+				InflictDamageOnMain(Main, (bAngleCheck1 || bAngleCheck2));
 			}
 		}
 	}

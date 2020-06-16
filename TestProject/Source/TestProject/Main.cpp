@@ -11,6 +11,7 @@
 #include "GameSave.h"
 #include "ItemStorage.h"
 #include "MainAnimInstance.h"
+#include "InventoryComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -46,6 +47,9 @@ AMain::AMain()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);	//Attach camera to end of spring arm 
 	FollowCamera->bUsePawnControlRotation = false;	//Will stay fixed to CameraBoom and will not rotate
 
+	Inventory = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
+	Inventory->Capacity = 20;
+
 	//Set out turn rates for input
 	BaseTurnRate = 65.0f;
 	BaseLookUpRate = 65.0f;
@@ -62,6 +66,7 @@ AMain::AMain()
 	GetCharacterMovement()->JumpZVelocity = 650.0f;
 	GetCharacterMovement()->AirControl = 0.20f;
 
+	// Player Stats
 	MaxHealth = 100.0f;
 	Health = 65.0f;
 	MaxStamina = 150.0f;
@@ -93,12 +98,12 @@ AMain::AMain()
 	bMovingRight = false;
 	bJumping = false;
 	bInterpToEnemy = false;
-
-
 	bIsWeaponEquipped = false;
 
 	AttackComboSection = 0;
 	SwingSoundIndex = 0;
+	IdleAnimSlot = 0;
+	
 
 	MovementStatus = EMovementStatus::EMS_Normal;
 	StaminaStatus = EStaminaStatus::ESS_Normal;
@@ -108,6 +113,7 @@ AMain::AMain()
 
 	InterpSpeed = 15.0f;
 
+	// Sockets in the Character's Skeleton to emit Blood when hit.
 	HitSocketNames.Add("BodyFrontHitSocket");
 	HitSocketNames.Add("HeadFrontHitSocket");
 	HitSocketNames.Add("BodyRearHitSocket");
@@ -345,6 +351,29 @@ void AMain::MoveForward(float Value)
 		AddMovementInput(Direction, Value);
 
 		bMovingForward = true;
+
+		//Reset the Idle Anim Slot
+		IdleAnimSlot = 0;
+	}
+}
+
+
+void AMain::MoveRight(float Value)
+{
+	bMovingRight = false;
+
+	if (bCanMove(Value))
+	{
+		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
+
+		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		AddMovementInput(Direction, Value);
+
+		bMovingRight = true;
+
+		//Reset the Idle Anim Slot
+		IdleAnimSlot = 0;
 	}
 }
 
@@ -364,21 +393,6 @@ void AMain::LookUp(float Value)
 	}
 }
 
-void AMain::MoveRight(float Value)
-{
-	bMovingRight = false;
-
-	if (bCanMove(Value))
-	{
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
-
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		AddMovementInput(Direction, Value);
-
-		bMovingRight = true;
-	}
-}
 
 void AMain::TurnAtRate(float Rate)
 {
@@ -1243,4 +1257,58 @@ bool AMain::CanCheckStaminaStatus()
 	return ((!GetMovementComponent()->IsFalling() && !bBlocking && !GetCharacterMovement()->IsCrouching()) && (
 		bShiftKeyDown && (bMovingForward ||
 			bMovingRight)));
+}
+
+/**
+ *Every time after an Idle Animation plays, the base Idle Animation should be played.
+ * After the base Idle Animation is complete, one of the other Idle Animations will be randomly chosen.
+ */
+void AMain::IdleEnd(int32 RandUpperLimit)
+{
+	if (IdleAnimSlot == 0)IdleAnimSlot = FMath::RandRange(1, RandUpperLimit - 1);
+	else IdleAnimSlot = 0;
+}
+
+
+/**
+	*First two Attack Sections are 1&2. Hence Ceiling of any of these divided by 2 = 1. HitSocketNames[1] gives "BodyFrontHitSocket".
+	*Similarly for either of 3&4, Ceiling divided by 2 = 2. HitSocketNames[2] gives "HeadFrontHitSocket".
+	*For rear hits, ceiling of either (1+4)&(2+4) i.e either 5&6 divided by 2 gives 3. HitSocketNames[3] gives "HeadFrontHitSocket"
+	*Similarly HitSocketNames[4] gives "HeadRearHitSocket"
+	*/
+void AMain::SpawnHitParticles(AEnemy* DamageCauser)
+{
+	UE_LOG(LogTemp, Warning, TEXT("BEFORE ENEMY ATTACK SECTION = %i"), DamageCauser->AttackSection);
+
+	DamageCauser->AttackSection = FMath::CeilToFloat(static_cast<float>(DamageCauser->AttackSection) / 2.0f);
+
+	UE_LOG(LogTemp, Warning, TEXT("Socket name = %s"), *(HitSocketNames[DamageCauser->AttackSection - 1].ToString()));
+
+	//Array indexes start at 0
+	const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(HitSocketNames[DamageCauser->AttackSection - 1]);
+
+	if (TipSocket)
+	{
+		FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, SocketLocation,
+		                                         FRotator(0.0f), true);
+	}
+}
+
+void AMain::UseItem(AItem* Item)
+{
+	//If not a Weapon and not a Shield
+	if(AWeapon* Weapon = Cast<AWeapon>(Item))
+	{
+		Weapon->Equip(this);
+	}
+	else if(AShield* Shield = Cast<AShield>(Item))
+	{
+		Shield->Equip(this);
+	}
+	else
+	{
+		Item->Use(this);
+		Item->OnUse(this);	//Blueprint Event
+	}
 }

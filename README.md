@@ -1,4 +1,6 @@
-# TestProject
+# TestProject/Medieval RPG Project
+
+ This is a game project made in Unreal Engine 4 that aims to imitate a RPG's basic game mechanics like combat, platforming, and interactions. I will use the experience garnered to develop future projects and demos I have planned. 
 
 ## Software used:
   - Unreal Engine 4 (version 4.25.0)

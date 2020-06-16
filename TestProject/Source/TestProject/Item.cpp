@@ -2,9 +2,14 @@
 
 
 #include "Item.h"
+
+
+#include "Shield.h"
+#include "Weapon.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+
 
 // Sets default values
 AItem::AItem()
@@ -23,6 +28,10 @@ AItem::AItem()
 
 	bShouldRotate = false;
 	RotationRate = 45.0f;
+
+	Weight = 1.0f;
+	ItemDisplayName = FName("Item");
+	UseActionText = FName("Use");
 }
 
 // Called when the game starts or when spawned
