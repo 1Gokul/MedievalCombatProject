@@ -48,9 +48,6 @@ protected:
 	void BeginPlay() override;
 
 public:
-	// Called every frame
-	void Tick(float DeltaTime) override;
-
 
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,

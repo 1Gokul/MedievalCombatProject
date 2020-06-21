@@ -103,7 +103,8 @@ AMain::AMain()
 	AttackComboSection = 0;
 	SwingSoundIndex = 0;
 	IdleAnimSlot = 0;
-	
+
+	PlayerStatus = EPlayerStatus::EPS_UnarmedIdle;
 
 	MovementStatus = EMovementStatus::EMS_Normal;
 	StaminaStatus = EStaminaStatus::ESS_Normal;
@@ -119,6 +120,15 @@ AMain::AMain()
 	HitSocketNames.Add("BodyRearHitSocket");
 	HitSocketNames.Add("HeadRearHitSocket");
 
+	//Number of Idle Animations for each state
+	NumberOfIdleAnims.Add(6);
+	NumberOfIdleAnims.Add(6);
+	NumberOfIdleAnims.Add(6);
+	NumberOfIdleAnims.Add(5);
+	NumberOfIdleAnims.Add(4);
+
+	//Delegate calls IdleEnd after Timer reaches zero, when Player is in 
+	TimerDel.BindUFunction(this, FName("IdleEnd"), static_cast<int32>(PlayerStatus));
 }
 
 // Called when the game starts or when spawned
@@ -154,6 +164,24 @@ void AMain::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	if (MovementStatus == EMovementStatus::EMS_Dead)return;
+
+	if (bInCombatMode)
+	{
+		if (CurrentWeapon)
+		{
+			if (CurrentWeapon->bIsTwoHanded)SetPlayerStatus(EPlayerStatus::EPS_CombatArmed_2H);
+			else SetPlayerStatus(EPlayerStatus::EPS_CombatArmed_1H);
+		}
+		else
+		{
+			if (EquippedShield)SetPlayerStatus(EPlayerStatus::EPS_ShieldUnarmed);
+			else SetPlayerStatus(EPlayerStatus::EPS_UnarmedCombat);
+		}
+	}
+	else
+	{
+		SetPlayerStatus(EPlayerStatus::EPS_UnarmedIdle);
+	}
 
 	// Decrease in Stamina per second when sprinting.
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
@@ -286,6 +314,15 @@ void AMain::Tick(float DeltaTime)
 			MainPlayerController->EnemyLocation = CombatTargetLocation;
 		}
 	}
+
+	if (!GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle) && !bCrouched)
+	{
+		if (IdleAnimSlot == 0
+			&& (Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance())->MovementSpeed == 0))
+		{
+			GetWorldTimerManager().SetTimer(IdleAnimTimerHandle, TimerDel, IdleTimeLimit, false);
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -338,6 +375,18 @@ bool AMain::bCanMove(float Value)
 	return false;
 }
 
+void AMain::ResetIdleTimer()
+{
+	//Reset the Idle Anim Slot
+	IdleAnimSlot = 0;
+
+	//Pause IdleAnimTimerHandle if Active
+	if(GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle))
+	{
+		GetWorldTimerManager().PauseTimer(IdleAnimTimerHandle);
+	}
+}
+
 void AMain::MoveForward(float Value)
 {
 	bMovingForward = false;
@@ -352,8 +401,7 @@ void AMain::MoveForward(float Value)
 
 		bMovingForward = true;
 
-		//Reset the Idle Anim Slot
-		IdleAnimSlot = 0;
+		ResetIdleTimer();
 	}
 }
 
@@ -372,8 +420,7 @@ void AMain::MoveRight(float Value)
 
 		bMovingRight = true;
 
-		//Reset the Idle Anim Slot
-		IdleAnimSlot = 0;
+		ResetIdleTimer();
 	}
 }
 
@@ -500,6 +547,9 @@ void AMain::RMBDown()
 	*/
 	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Dead)
 	{
+
+		ResetIdleTimer();
+		
 		//Blocking with a Weapon should only be allowed if the weapon is Two-Handed.
 		if (CurrentWeapon && !EquippedShield)
 		{
@@ -526,7 +576,7 @@ void AMain::RMBDown()
 		else
 		{
 			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
-			
+
 			if (MainAnimInstance)
 			{
 				//If Player is not currently falling
@@ -589,7 +639,13 @@ void AMain::SheatheWeapon()
 	{
 		bIsWeaponEquipped = false;
 
-		//Play the Unsheath Animation
+		//Play the Sheath sound
+		if (CurrentWeapon->OnSheathSound)
+		{
+			UGameplayStatics::PlaySound2D(this, CurrentWeapon->OnSheathSound);
+		}
+
+		//Play the Sheath Animation
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 		if (AnimInstance && UpperBodyMontage)
@@ -598,7 +654,7 @@ void AMain::SheatheWeapon()
 
 			if (CurrentWeapon->bIsTwoHanded)
 				AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_TwoHanded"), UpperBodyMontage);
-			
+
 			else AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_OneHanded"), UpperBodyMontage);
 		}
 	}
@@ -612,7 +668,13 @@ void AMain::DrawWeapon()
 	{
 		bIsWeaponEquipped = true;
 
-		//Play the Sheath Animation
+		//Play the Draw sound
+		if (CurrentWeapon->OnEquipSound)
+		{
+			UGameplayStatics::PlaySound2D(this, CurrentWeapon->OnEquipSound);
+		}
+
+		//Play the Draw Animation
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 		if (AnimInstance && UpperBodyMontage)
@@ -629,6 +691,8 @@ void AMain::DrawWeapon()
 void AMain::FKeyDown()
 {
 	bFKeyDown = true;
+
+	ResetIdleTimer();
 
 	/** If already in Combat Mode, switch back to Normal Mode and Sheathe the Weapon, if equipped. */
 	if (bInCombatMode && !bBlocking)
@@ -651,6 +715,8 @@ void AMain::CtrlUp()
 void AMain::CtrlDown()
 {
 	bCtrlDown = true;
+
+	ResetIdleTimer();
 
 	if (GetCharacterMovement()->IsCrouching())
 	{
@@ -716,7 +782,7 @@ void AMain::PlayMeleeAttack(int32 Section)
 		else
 		{
 			//If Player has a Shield equipped, play the even-numbered attacks only.
-			if (EquippedShield)
+			if (PlayerStatus == EPlayerStatus::EPS_ShieldUnarmed)
 			{
 				//Override Section
 				Section = FMath::RandRange(2, 4);
@@ -771,6 +837,8 @@ void AMain::ResetMeleeAttackComboSection()
 
 void AMain::MeleeAttack()
 {
+	ResetIdleTimer();
+	
 	if (!bAttacking && (MovementStatus != EMovementStatus::EMS_Dead))
 	{
 		bAttacking = true;
@@ -882,7 +950,6 @@ void AMain::Impact(int32 Section)
 
 void AMain::BlockImpact(int32 Section)
 {
-	
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	if (AnimInstance && UpperBodyMontage)
@@ -1263,9 +1330,12 @@ bool AMain::CanCheckStaminaStatus()
  *Every time after an Idle Animation plays, the base Idle Animation should be played.
  * After the base Idle Animation is complete, one of the other Idle Animations will be randomly chosen.
  */
-void AMain::IdleEnd(int32 RandUpperLimit)
+void AMain::IdleEnd(int32 PlayerStatusNo)
 {
-	if (IdleAnimSlot == 0)IdleAnimSlot = FMath::RandRange(1, RandUpperLimit - 1);
+	if (IdleAnimSlot == 0)
+	{
+		IdleAnimSlot = FMath::RandRange(1, NumberOfIdleAnims[PlayerStatusNo] - 1);
+	}
 	else IdleAnimSlot = 0;
 }
 
@@ -1298,11 +1368,11 @@ void AMain::SpawnHitParticles(AEnemy* DamageCauser)
 void AMain::UseItem(AItem* Item)
 {
 	//If not a Weapon and not a Shield
-	if(AWeapon* Weapon = Cast<AWeapon>(Item))
+	if (AWeapon* Weapon = Cast<AWeapon>(Item))
 	{
 		Weapon->Equip(this);
 	}
-	else if(AShield* Shield = Cast<AShield>(Item))
+	else if (AShield* Shield = Cast<AShield>(Item))
 	{
 		Shield->Equip(this);
 	}

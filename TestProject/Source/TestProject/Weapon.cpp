@@ -205,11 +205,6 @@ void AWeapon::Sheath(AMain* Char)
 		{
 			SheathSocket->AttachActor(this, Char->GetMesh());
 		}
-
-		if (OnSheathSound)
-		{
-			UGameplayStatics::PlaySound2D(this, OnSheathSound);
-		}
 	}
 }
 
@@ -224,11 +219,6 @@ void AWeapon::Unsheathe(AMain* Char)
 		if (RightHandSocket)
 		{
 			RightHandSocket->AttachActor(this, Char->GetMesh());
-		}
-
-		if (OnEquipSound)
-		{
-			UGameplayStatics::PlaySound2D(this, OnEquipSound);
 		}
 	}
 }

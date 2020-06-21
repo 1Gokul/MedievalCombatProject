@@ -11,7 +11,7 @@
 AFloorSwitch::AFloorSwitch()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 
 	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
@@ -46,12 +46,6 @@ void AFloorSwitch::BeginPlay()
 	UE_LOG(LogTemp, Warning, TEXT("Initial Door Location- (%f, %f, %f)"), InitialDoorLocation.X, InitialDoorLocation.Y,
 	       InitialDoorLocation.Z);
 	InitialSwitchLocation = FloorSwitch->GetComponentLocation();
-}
-
-// Called every frame
-void AFloorSwitch::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 
 void AFloorSwitch::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
