@@ -22,6 +22,13 @@ protected:
 
 public:
 
+	void GameModeOnly();
+	void GameAndUIMode();
+
+	bool bUIWidgetCurrentlyActive();
+
+	/** For Player HUD	*/
+	
 	/** Reference to the UMG asset in the editor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> HUDOverlayAsset;
@@ -29,6 +36,8 @@ public:
 	/** Variable to hold the widget after creating it */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* HUDOverlay;
+
+	bool bHUDVisible;
 
 	/** For Enemy health bar */
 
@@ -63,5 +72,24 @@ public:
 
 	void TogglePauseMenu();
 
-	void GameModeOnly();
+	/** Inventory Menu*/
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<UUserWidget> WInventoryMenu;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* InventoryMenu;
+
+	bool bInventoryMenuVisible;
+
+	//Parameter needed to set Inventory in BP
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void DisplayInventoryMenu(class UInventoryComponent* InventoryComponent);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void RemoveInventoryMenu();
+
+	
+
+	
 };

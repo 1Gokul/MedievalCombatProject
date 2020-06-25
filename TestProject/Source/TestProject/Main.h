@@ -157,6 +157,12 @@ public:
 	/** Ctrl button*/
 	bool bCtrlDown;
 
+	/** Tab button */
+	bool bTabDown;
+
+	/** E key */
+	bool bEKeyDown;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 	bool bAttacking;
 
@@ -232,8 +238,14 @@ public:
 
 	/** TSubclass that specifies to GetOverlappingActors()
 	 *	to get overlapping actors of only type AEnemy. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat ")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<AEnemy> EnemyFilter;
+
+	/** TSubclass that specifies to GetOverlappingActors()
+	 *	to get overlapping actors of only type AActor.
+	 *	(For the Interact function) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interact")
+	TSubclassOf<AActor> ActorFilter;
 
 	UPROPERTY(EditDefaultsOnly, Category = "SavedData")
 	TSubclassOf<class AItemStorage> WeaponStorage;
@@ -311,6 +323,16 @@ public:
 	/** Ctrl Key*/
 	void CtrlUp();
 	void CtrlDown();
+
+	/** Tab key */
+	void TabUp();
+	void TabDown();
+
+	/** E Key */
+	void EKeyUp();
+	void EKeyDown();
+	
+	
 
 	/** Make the Character crouch smoothly using Blueprints. */
 

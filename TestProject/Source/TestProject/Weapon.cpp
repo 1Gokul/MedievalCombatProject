@@ -105,7 +105,7 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		if (Enemy)
 		{
-			DeactivateCollision();
+			//DeactivateCollision();
 
 			Enemy->DeactivateCollisionLeft();
 			Enemy->DeactivateCollisionRight();

@@ -10,13 +10,18 @@ void AMainPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	bPauseMenuVisible = false;
+	bInventoryMenuVisible = false;
+
 	if (HUDOverlayAsset)
 	{
 		HUDOverlay = CreateWidget<UUserWidget>(this, HUDOverlayAsset);
 	}
 
+	// TODO: Change to be visible only when the level starts because it will have to be hidden when a Main Menu is added.
 	HUDOverlay->AddToViewport();
 	HUDOverlay->SetVisibility(ESlateVisibility::Visible);
+	bHUDVisible = true;
 
 	if (WEnemyHealthBar)
 	{
@@ -42,12 +47,14 @@ void AMainPlayerController::BeginPlay()
 			PauseMenu->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
+
 }
 
 void AMainPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	/** Update position of Enemy health bar depending on the Enemy's current position */
 	if (EnemyHealthBar)
 	{
 		FVector2D PositionInViewport;
@@ -64,14 +71,35 @@ void AMainPlayerController::Tick(float DeltaTime)
 	}
 }
 
+void AMainPlayerController::GameModeOnly()
+{
+	FInputModeGameOnly InputModeGameOnly;
+
+	SetInputMode(InputModeGameOnly);
+}
+
+void AMainPlayerController::GameAndUIMode()
+{
+	FInputModeGameAndUI InputModeGameAndUI;
+
+	SetInputMode(InputModeGameAndUI);
+}
+
+bool AMainPlayerController::bUIWidgetCurrentlyActive()
+{
+	return(bInventoryMenuVisible || bPauseMenuVisible);
+}
+
 
 void AMainPlayerController::DisplayEnemyHealthBar()
 {
+	
 	if (EnemyHealthBar)
 	{
 		bEnemyHealthBarVisible = true;
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Visible);
 	}
+	
 }
 
 void AMainPlayerController::RemoveEnemyHealthBar()
@@ -80,38 +108,6 @@ void AMainPlayerController::RemoveEnemyHealthBar()
 	{
 		bEnemyHealthBarVisible = false;
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
-	}
-}
-
-void AMainPlayerController::DisplayPauseMenu_Implementation()
-{
-	if (PauseMenu)
-	{
-		bPauseMenuVisible = true;
-
-		UGameplayStatics::SetGamePaused(GetWorld(), true);
-
-		PauseMenu->SetVisibility(ESlateVisibility::Visible);
-
-		FInputModeGameAndUI InputModeGameAndUI;
-
-		SetInputMode(InputModeGameAndUI);
-		bShowMouseCursor = true;
-	}
-}
-
-void AMainPlayerController::RemovePauseMenu_Implementation()
-{
-	if (PauseMenu)
-	{
-		UGameplayStatics::SetGamePaused(GetWorld(), false);
-
-
-		GameModeOnly();
-
-		bShowMouseCursor = false;
-
-		bPauseMenuVisible = false;
 	}
 }
 
@@ -127,9 +123,94 @@ void AMainPlayerController::TogglePauseMenu()
 	}
 }
 
-void AMainPlayerController::GameModeOnly()
+void AMainPlayerController::DisplayPauseMenu_Implementation()
 {
-	FInputModeGameOnly InputModeGameOnly;
+	// Hide the HUD
+	if(bHUDVisible){
+		HUDOverlay->SetVisibility(ESlateVisibility::Hidden);
+		bHUDVisible = false;
+	}
+	
+	if (PauseMenu)
+	{
+		bPauseMenuVisible = true;
 
-	SetInputMode(InputModeGameOnly);
+		UGameplayStatics::SetGamePaused(GetWorld(), true);
+
+		PauseMenu->SetVisibility(ESlateVisibility::Visible);
+
+		GameAndUIMode();
+		
+		bShowMouseCursor = true;
+	}
 }
+
+void AMainPlayerController::RemovePauseMenu_Implementation()
+{
+	// Show the HUD
+	if(!bHUDVisible){
+		HUDOverlay->SetVisibility(ESlateVisibility::Visible);
+		bHUDVisible = true;
+	}
+	
+	if (PauseMenu)
+	{
+		UGameplayStatics::SetGamePaused(GetWorld(), false);
+
+		//Visibility is set in blueprint
+
+		GameModeOnly();
+
+		bShowMouseCursor = false;
+
+		bPauseMenuVisible = false;
+	}
+	
+}
+
+void AMainPlayerController::DisplayInventoryMenu_Implementation(UInventoryComponent* InventoryComponent)
+{
+	// Hide the HUD
+	if(bHUDVisible){
+		HUDOverlay->SetVisibility(ESlateVisibility::Hidden);
+		bHUDVisible = false;
+	}
+	
+	if (InventoryMenu)
+	{
+		bInventoryMenuVisible = true;
+
+		UGameplayStatics::SetGamePaused(GetWorld(), true);
+
+		//InventoryMenu->SetVisibility(ESlateVisibility::Visible);
+
+		GameAndUIMode();
+		
+		bShowMouseCursor = true;
+	}
+}
+
+
+void AMainPlayerController::RemoveInventoryMenu_Implementation()
+{
+	// Show the HUD
+	if(!bHUDVisible){
+		HUDOverlay->SetVisibility(ESlateVisibility::Visible);
+		bHUDVisible = true;
+	}
+	
+	if (InventoryMenu)
+	{
+		bInventoryMenuVisible = false;
+		
+		UGameplayStatics::SetGamePaused(GetWorld(), false);			
+
+		GameModeOnly();
+
+		bShowMouseCursor = false;
+
+		
+	}
+}
+
+

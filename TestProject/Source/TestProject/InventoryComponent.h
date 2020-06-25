@@ -9,6 +9,18 @@
 // Make Blueprints bind this to update the UI
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
 
+USTRUCT(BlueprintType)
+struct FSlotStructure
+{
+	GENERATED_BODY()
+	
+	//Constructor
+	FSlotStructure();
+	
+	struct FItemStructure* ItemStructure;
+	int32 Quantity;	
+};
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESTPROJECT_API UInventoryComponent : public UActorComponent
 {
@@ -17,21 +29,25 @@ class TESTPROJECT_API UInventoryComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UInventoryComponent();
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Inventory")
+	FText InventoryName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Inventory")
+	int32 NumberOfSlots;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "SlotStructure")
+	TArray<FSlotStructure> Inventory;
 
 	bool AddItem(class AItem* Item);
-	bool RemoveItem(class AItem* Item);
-
-	UPROPERTY(EditDefaultsOnly, Instanced)
-	TArray<class AItem*> DefaultItems;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
-	int32 Capacity;
+	bool RemoveItem(AItem* Item);  
+	
 
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 	FOnInventoryUpdated OnInventoryUpdated;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
-	TArray<class AItem*> Items;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items")
+	TArray<AItem*> Items;
 
 protected:
 	// Called when the game starts

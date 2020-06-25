@@ -3,11 +3,64 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InteractInterface.h"
 #include "GameFramework/Actor.h"
 #include "Item.generated.h"
 
+
+USTRUCT(BlueprintType)
+struct FItemStructure
+{
+	GENERATED_BODY()
+
+	//Constructor
+	FItemStructure();
+
+	/** The display name for this item in the inventory */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
+	FName ItemDisplayName;
+	
+	/** The Text for using the Item i.e "Eat", "Equip" etc. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
+	FName UseActionText;
+
+		/** Optional description of the item */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info", meta = (MultiLine = true))
+	FString ItemDescription;
+
+	/** The weight of the item */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info", meta = (ClampMin = 0.0))
+	float Weight;
+
+	/** If true, multiple Items of this type can be stacked together. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
+	bool bIsStackable;
+
+	/** The thumbnail for this item in the menu*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	class UTexture2D* Thumbnail;
+
+	/** Maximum number of Items of this type that can be stacked together. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	int32 MaxStackSize;
+
+	/** If the Item is consumable or not*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	bool bIsConsumable;
+
+	/** If the Item is equippable or not*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	bool bIsEquippable;
+
+	/** Item class reference */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	TSubclassOf<AActor> ItemClass;
+	
+};
+
+
 UCLASS(Abstract, BlueprintType, Blueprintable)
-class TESTPROJECT_API AItem : public AActor
+class TESTPROJECT_API AItem : public AActor, public IInteractInterface
 {
 	GENERATED_BODY()
 
@@ -17,7 +70,10 @@ public:
 
 	UPROPERTY(Transient)
 	class UWorld* World;
-	
+
+	/** Item Stats*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ItemStructure")
+	FItemStructure ItemStats;
 
 	/** Base shape collision*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Collision")
@@ -26,26 +82,6 @@ public:
 	/**Item mesh*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Mesh")
 	class UStaticMeshComponent* StaticMesh;
-
-	/** The Text for using the Item i.e "Eat", "Equip" etc. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
-	FName UseActionText;
-
-	/** The thumbnail for this item in the menu*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
-	class UTexture2D* Thumbnail;
-
-	/** The display name for this item in the inventory */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
-	FName ItemDisplayName;
-
-	/** Optional description of the item */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info", meta = (MultiLine = true))
-	FString ItemDescription;
-
-	/** The weight of the item */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info", meta = (ClampMin = 0.0))
-	float Weight;
 
 	/** Particle Component when the item is idle and has not been picked up */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Particles")
@@ -67,9 +103,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | ItemProperties")
 	float RotationRate;
 
-	/** The Inventory that owns this item */
+	/** The Inventory that owns this item*/
 	UPROPERTY()
-	class UInventoryComponent* OwningInventory;
+	class UInventoryComponent* OwningInventory; 
 
 	
 protected:
@@ -90,6 +126,9 @@ public:
 	UFUNCTION()
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	                          UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	/** Override Interact() function from IInteractInterface class */
+	virtual void Interact() override;
 
 	virtual void Use(class AMain* Main) PURE_VIRTUAL(AItem, );
 

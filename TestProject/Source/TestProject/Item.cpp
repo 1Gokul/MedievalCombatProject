@@ -11,6 +11,25 @@
 #include "Particles/ParticleSystemComponent.h"
 
 
+FItemStructure::FItemStructure()
+{
+	 ItemDisplayName = FName("Item");
+	
+	UseActionText = FName("Use");
+	
+	bIsStackable = true;
+
+	ItemDescription = FString("None");
+
+	MaxStackSize = 4;
+
+	bIsConsumable = true;
+	bIsEquippable = false;
+	
+	Weight = 1.0f;
+}
+
+
 // Sets default values
 AItem::AItem()
 {
@@ -28,10 +47,6 @@ AItem::AItem()
 
 	bShouldRotate = false;
 	RotationRate = 45.0f;
-
-	Weight = 1.0f;
-	ItemDisplayName = FName("Item");
-	UseActionText = FName("Use");
 }
 
 // Called when the game starts or when spawned
@@ -65,4 +80,10 @@ void AItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 void AItem::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
                          int32 OtherBodyIndex)
 {
+}
+
+void AItem::Interact()
+{
+	UE_LOG(LogTemp, Warning, TEXT("InteractInterface::Interact() has been called!"));
+	Destroy();
 }

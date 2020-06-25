@@ -4,18 +4,27 @@
 #include "InventoryComponent.h"
 #include "Item.h"
 
+//Sets default values for a FSlotStructure objecct
+FSlotStructure::FSlotStructure()
+{
+	
+}
+
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
 {
-	Capacity = 20;
+	InventoryName = FText::FromString("Backpack");
+	
+	NumberOfSlots = 20;
 }
 
 bool UInventoryComponent::AddItem(AItem* Item)
 {
-	if(Items.Num() >= Capacity || !Item)
+	if(Items.Num() >= NumberOfSlots || !Item)
 	{
 		return false;
 	}
+
 	
 	Item->OwningInventory = this;
 	Item->World = GetWorld();
@@ -50,10 +59,4 @@ bool UInventoryComponent::RemoveItem(AItem* Item)
 void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	for(auto& Item : DefaultItems)
-	{
-		AddItem(Item);
-	}
-	
 }
