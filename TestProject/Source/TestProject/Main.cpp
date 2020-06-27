@@ -794,7 +794,7 @@ void AMain::EKeyDown()
 		//  if the OverlappingActor implements UInteractInterface
 		if(OverlappingActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
 		{
-			Cast<IInteractInterface>(OverlappingActor)->Interact();
+			Cast<IInteractInterface>(OverlappingActor)->Interact(this);
 
 			break;
 		}

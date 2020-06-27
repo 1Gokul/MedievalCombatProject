@@ -9,14 +9,15 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "InventoryComponent.h"
 
 
-FItemStructure::FItemStructure()
+FItemStructure::FItemStructure(): Thumbnail(nullptr)
 {
-	 ItemDisplayName = FName("Item");
-	
+	ItemDisplayName = FName("None");
+
 	UseActionText = FName("Use");
-	
+
 	bIsStackable = true;
 
 	ItemDescription = FString("None");
@@ -25,7 +26,7 @@ FItemStructure::FItemStructure()
 
 	bIsConsumable = true;
 	bIsEquippable = false;
-	
+
 	Weight = 1.0f;
 }
 
@@ -82,8 +83,24 @@ void AItem::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Other
 {
 }
 
-void AItem::Interact()
+void AItem::Interact(AActor* Interacter)
 {
 	UE_LOG(LogTemp, Warning, TEXT("InteractInterface::Interact() has been called!"));
-	Destroy();
+
+	UActorComponent* InventoryComponent = Interacter->GetComponentByClass(UInventoryComponent::StaticClass());
+
+	UInventoryComponent* OwningInventory = Cast<UInventoryComponent>(InventoryComponent);
+
+	if(OwningInventory)
+	{
+		//Add values to a SlotStructure Object
+		FSlotStructure SlotStructure = FSlotStructure();
+		SlotStructure.ItemStructure = ItemStructure;
+		SlotStructure.Quantity = 1;
+
+		// Add the object to the Inventory
+		OwningInventory->AddToInventory(SlotStructure);
+
+		Destroy();
+	}
 }

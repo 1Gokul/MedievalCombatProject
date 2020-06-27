@@ -37,23 +37,23 @@ struct FItemStructure
 	bool bIsStackable;
 
 	/** The thumbnail for this item in the menu*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
 	class UTexture2D* Thumbnail;
 
 	/** Maximum number of Items of this type that can be stacked together. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
 	int32 MaxStackSize;
 
 	/** If the Item is consumable or not*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
 	bool bIsConsumable;
 
 	/** If the Item is equippable or not*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
 	bool bIsEquippable;
 
 	/** Item class reference */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item | Info")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
 	TSubclassOf<AActor> ItemClass;
 	
 };
@@ -73,7 +73,7 @@ public:
 
 	/** Item Stats*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ItemStructure")
-	FItemStructure ItemStats;
+	FItemStructure ItemStructure;
 
 	/** Base shape collision*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Collision")
@@ -128,7 +128,7 @@ public:
 	                          UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	/** Override Interact() function from IInteractInterface class */
-	virtual void Interact() override;
+	virtual void Interact(AActor* Interacter) override;
 
 	virtual void Use(class AMain* Main) PURE_VIRTUAL(AItem, );
 

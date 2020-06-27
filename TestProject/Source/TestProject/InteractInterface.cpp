@@ -4,6 +4,6 @@
 #include "InteractInterface.h"
 
 // Add default functionality here for any IInteractInterface functions that are not pure virtual.
-void IInteractInterface::Interact()
+void IInteractInterface::Interact(AActor* Interacter)
 {
 }

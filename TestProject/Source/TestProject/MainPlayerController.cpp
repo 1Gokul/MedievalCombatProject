@@ -176,8 +176,7 @@ void AMainPlayerController::DisplayInventoryMenu_Implementation(UInventoryCompon
 		bHUDVisible = false;
 	}
 	
-	if (InventoryMenu)
-	{
+	
 		bInventoryMenuVisible = true;
 
 		UGameplayStatics::SetGamePaused(GetWorld(), true);
@@ -187,7 +186,7 @@ void AMainPlayerController::DisplayInventoryMenu_Implementation(UInventoryCompon
 		GameAndUIMode();
 		
 		bShowMouseCursor = true;
-	}
+	
 }
 
 
@@ -198,9 +197,7 @@ void AMainPlayerController::RemoveInventoryMenu_Implementation()
 		HUDOverlay->SetVisibility(ESlateVisibility::Visible);
 		bHUDVisible = true;
 	}
-	
-	if (InventoryMenu)
-	{
+
 		bInventoryMenuVisible = false;
 		
 		UGameplayStatics::SetGamePaused(GetWorld(), false);			
@@ -210,7 +207,7 @@ void AMainPlayerController::RemoveInventoryMenu_Implementation()
 		bShowMouseCursor = false;
 
 		
-	}
+	
 }
 
 

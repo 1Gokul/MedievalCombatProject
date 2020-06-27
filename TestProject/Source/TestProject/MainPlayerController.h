@@ -74,11 +74,6 @@ public:
 
 	/** Inventory Menu*/
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	TSubclassOf<UUserWidget> WInventoryMenu;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
-	UUserWidget* InventoryMenu;
 
 	bool bInventoryMenuVisible;
 
