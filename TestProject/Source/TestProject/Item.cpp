@@ -87,6 +87,8 @@ void AItem::Interact(AActor* Interacter)
 {
 	UE_LOG(LogTemp, Warning, TEXT("InteractInterface::Interact() has been called!"));
 
+	// Get the InventoryComponent of the Interacter and add the Items to its Inventory.
+
 	UActorComponent* InventoryComponent = Interacter->GetComponentByClass(UInventoryComponent::StaticClass());
 
 	UInventoryComponent* OwningInventory = Cast<UInventoryComponent>(InventoryComponent);

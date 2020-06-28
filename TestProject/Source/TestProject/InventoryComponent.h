@@ -23,11 +23,11 @@ struct FSlotStructure
  *	Used for the Inventory.Find() function.
  *	Overrides the default '==' operator.
  *	Therefore, if the SlotStructure Object passed as a parameter has Name == "None" it will be treated as an Empty Item.
- */
+ 
 	bool operator==(const FSlotStructure& arg) const
 	{
 		return (arg.ItemStructure.ItemDisplayName == FName("None"));
-	}
+	}	*/
 
 	/** Reference to the FItemStructure variable of the Item. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "SlotStructure")
@@ -37,7 +37,10 @@ struct FSlotStructure
 	int32 Quantity;
 };
 
-
+ static bool operator==(const FSlotStructure &arg1, const FSlotStructure &arg2)
+ {
+	 return (arg1.ItemStructure.ItemDisplayName == arg2.ItemStructure.ItemDisplayName);
+ }
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESTPROJECT_API UInventoryComponent : public UActorComponent
@@ -82,8 +85,16 @@ public:
 	 * Adds the SlotStructure of the Item into the Inventory.
 	 * @param ContentToAdd - The Item SlotStructure to add.
 	 *
-	 * returns true if ContentToAdd was successfully added to the Inventory.
+	 * @returns True if ContentToAdd was successfully added to the Inventory.
 	 */
 	 bool AddToInventory(FSlotStructure ContentToAdd);
-	
+
+	/**
+	 * Adds a Stackable Item into its respective ItemStack in the Inventory.
+	 *
+	 * @param SlotStructure - The Item to add
+	 * @param SlotIndex - The position of the ItemStack in the Inventory.
+	 */
+
+	void AddToStack(FSlotStructure SlotStructure, int32 SlotIndex);
 };
