@@ -2,6 +2,8 @@
 
 
 #include "MainPlayerController.h"
+
+#include "InventoryComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
@@ -123,6 +125,18 @@ void AMainPlayerController::TogglePauseMenu()
 	}
 }
 
+void AMainPlayerController::ToggleInventoryMenu(UInventoryComponent* InventoryComponent)
+{
+	if(bInventoryMenuVisible)
+	{
+		RemoveInventoryMenu();
+	}
+	else
+	{
+		DisplayInventoryMenu(InventoryComponent);
+	}
+}
+
 void AMainPlayerController::DisplayPauseMenu_Implementation()
 {
 	// Hide the HUD
@@ -175,7 +189,8 @@ void AMainPlayerController::DisplayInventoryMenu_Implementation(UInventoryCompon
 		HUDOverlay->SetVisibility(ESlateVisibility::Hidden);
 		bHUDVisible = false;
 	}
-	
+
+		InventoryComponent->PrepareInventory();
 	
 		bInventoryMenuVisible = true;
 

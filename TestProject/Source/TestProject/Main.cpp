@@ -4,8 +4,8 @@
 #include "Main.h"
 
 
-#include "Weapon.h"
-#include "Shield.h"
+#include "Items/Weapon.h"
+#include "Items/Shield.h"
 #include "Enemy.h"
 #include "MainPlayerController.h"
 #include "GameSave.h"
@@ -48,7 +48,7 @@ AMain::AMain()
 	FollowCamera->bUsePawnControlRotation = false;	// Will stay fixed to CameraBoom and will not rotate
 
 	Inventory = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
-	Inventory->NumberOfSlots = 20;
+	Inventory->NumberOfSlots = 21;
 
 	// Set out turn rates for input
 	BaseTurnRate = 65.0f;
@@ -65,6 +65,7 @@ AMain::AMain()
 	GetCharacterMovement()->RotationRate = FRotator(0.0, 1000.0f, 0.0f);
 	GetCharacterMovement()->JumpZVelocity = 650.0f;
 	GetCharacterMovement()->AirControl = 0.20f;
+	
 
 	//  Player Stats
 	MaxHealth = 100.0f;
@@ -87,7 +88,7 @@ AMain::AMain()
 	bShiftKeyDown = false;
 	bLMBDown = false;
 	bRMBDown = false;
-	bFKeyDown = false;
+	bRKeyDown = false;
 	bCtrlDown = false;
 	bTabDown = false;
 	bEKeyDown = false;
@@ -158,6 +159,8 @@ void AMain::BeginPlay()
 	{
 		MainPlayerController->GameModeOnly();
 	}
+
+	
 }
 
 //  Called every frame
@@ -325,6 +328,8 @@ void AMain::Tick(float DeltaTime)
 			GetWorldTimerManager().SetTimer(IdleAnimTimerHandle, TimerDel, IdleTimeLimit, false);
 		}
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Main NumberOfSlots = %i"), Inventory->NumberOfSlots);
 }
 
 //  Called to bind functionality to input
@@ -356,8 +361,8 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAxis("TurnRate", this, &AMain::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AMain::LookUpAtRate);
 
-	PlayerInputComponent->BindAction("CombatMode", IE_Pressed, this, &AMain::FKeyDown);
-	PlayerInputComponent->BindAction("CombatMode", IE_Released, this, &AMain::FKeyUp);
+	PlayerInputComponent->BindAction("CombatMode", IE_Pressed, this, &AMain::RKeyDown);
+	PlayerInputComponent->BindAction("CombatMode", IE_Released, this, &AMain::RKeyUp);
 
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AMain::CtrlDown);
 	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AMain::CtrlUp);
@@ -365,8 +370,8 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AMain::TabDown).bExecuteWhenPaused = true;
 	PlayerInputComponent->BindAction("Inventory", IE_Released, this, &AMain::TabUp).bExecuteWhenPaused = true;
 
-	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMain::EKeyDown);
-	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMain::EKeyUp);
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMain::EKeyDown).bExecuteWhenPaused = true;
+	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMain::EKeyUp).bExecuteWhenPaused = true;
 }
 
 bool AMain::bCanMove(float Value)
@@ -623,15 +628,15 @@ void AMain::ESCDown()
 	}
 }
 
-void AMain::FKeyUp()
+void AMain::RKeyUp()
 {
-	bFKeyDown = false;
+	bRKeyDown = false;
 }
 
 
-void AMain::FKeyDown()
+void AMain::RKeyDown()
 {
-	bFKeyDown = true;
+	bRKeyDown = true;
 
 	ResetIdleTimer();
 
@@ -763,14 +768,7 @@ void AMain::TabDown()
 		// If a UI Widget (Other than the HUD) is not currently active, display the Inventory menu.
 		if(!MainPlayerController->bPauseMenuVisible){
 
-			if(MainPlayerController->bInventoryMenuVisible)
-			{
-				MainPlayerController->RemoveInventoryMenu();
-			}
-			else
-			{
-				 MainPlayerController->DisplayInventoryMenu(Inventory);
-			}
+			MainPlayerController->ToggleInventoryMenu(Inventory);
 			
 		}
 	}
@@ -794,6 +792,7 @@ void AMain::EKeyDown()
 		//  if the OverlappingActor implements UInteractInterface
 		if(OverlappingActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
 		{
+			// Execute Interact()
 			Cast<IInteractInterface>(OverlappingActor)->Interact(this);
 
 			break;

@@ -74,17 +74,14 @@ public:
 
 	/** Inventory Menu*/
 
-
 	bool bInventoryMenuVisible;
+
+	void ToggleInventoryMenu(class UInventoryComponent* InventoryComponent);
 
 	//Parameter needed to set Inventory in BP
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
 	void DisplayInventoryMenu(class UInventoryComponent* InventoryComponent);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
-	void RemoveInventoryMenu();
-
-	
-
-	
+	void RemoveInventoryMenu();	
 };

@@ -2,7 +2,8 @@
 
 
 #include "InventoryComponent.h"
-#include "Item.h"
+#include "Engine/SCS_Node.h"
+#include "Engine/SimpleConstructionScript.h"
 
 //Sets default values for a FSlotStructure object
 FSlotStructure::FSlotStructure()
@@ -13,10 +14,8 @@ FSlotStructure::FSlotStructure()
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
 {
-	InventoryName = FText::FromString("Backpack");
+	InventoryName = FText::FromString("Inventory");
 
-	// Inventory Menu layout - 3 rows with 7 columns each.
-	NumberOfSlots = 21;
 }
 
 // Called when the game starts
@@ -31,7 +30,6 @@ void UInventoryComponent::BeginPlay()
 void UInventoryComponent::PrepareInventory()
 {
 	Inventory.SetNum(NumberOfSlots);
-	
 }
 
 void UInventoryComponent::CreateStack(FSlotStructure ContentToAdd)
@@ -69,7 +67,7 @@ bool UInventoryComponent::AddToInventory(FSlotStructure ContentToAdd)
 		bool bCanAddToStack = false;
 		
 		int i = 0; //Gets incremented in the loop below.
-		for (FSlotStructure Element : Inventory)
+		for (FSlotStructure &Element : Inventory)
 		{
 			if(
 				(Element.ItemStructure.ItemClass == ContentToAdd.ItemStructure.ItemClass)	// If the Item class matches

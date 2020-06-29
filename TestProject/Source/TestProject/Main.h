@@ -55,13 +55,13 @@ class TESTPROJECT_API AMain : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
-	/** Player Inventory */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
-	class UInventoryComponent* Inventory;
-
 public:
 	// Sets default values for this character's properties
 	AMain();
+
+	/** Player Inventory */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
+	class UInventoryComponent* Inventory;
 
 	/** The Weapon that the Character is currently using */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
@@ -152,7 +152,7 @@ public:
 	bool bESCDown;
 
 	/** F: F Button*/
-	bool bFKeyDown;
+	bool bRKeyDown;
 
 	/** Ctrl button*/
 	bool bCtrlDown;
@@ -317,8 +317,8 @@ public:
 	void ESCDown();
 
 	/** F: F Button*/
-	void FKeyUp();
-	void FKeyDown();
+	void RKeyUp();
+	void RKeyDown();
 
 	/** Ctrl Key*/
 	void CtrlUp();

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Item.h"
+#include "Items/Item.h"
 #include "InventoryComponent.generated.h"
 
 // Make Blueprints bind this to update the UI
@@ -60,12 +60,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "SlotStructure")
 	TArray<FSlotStructure> Inventory;
 
-	UPROPERTY(BlueprintAssignable, Category = "Inventory")
-	FOnInventoryUpdated OnInventoryUpdated;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items")
-	TArray<AItem*> Items;
-
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -75,6 +69,15 @@ public:
 	
 	/** Resize the Inventory to NumberOfSlots. */
 	void PrepareInventory();
+
+	/** What the above function does is only resize the Inventory.
+	 *
+	 *  But If there are Blueprint Classes that need to be added into the Inventory (like default items),
+	 *  The function below will add the Class defaults of each Blueprint class in the Inventory,
+	 *  so all default values of those blueprint classes will be added.
+	 *
+	 *  This function AddBlueprintClassDefaults() is declared in MainPlayerController_BP.
+	 */
 
 	/** Creates a stack for a particular Item.
 	 * 	@param ContentToAdd - The Item SlotStructure to add.
@@ -97,4 +100,7 @@ public:
 	 */
 
 	void AddToStack(FSlotStructure SlotStructure, int32 SlotIndex);
+
+	//FORCEINLINE void SetNumberOfSlots(int32 Size){ Inventory.SetNum(Size);}
+
 };
