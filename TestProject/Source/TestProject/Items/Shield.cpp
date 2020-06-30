@@ -61,7 +61,7 @@ void AShield::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 void AShield::Equip(AMain* Char)
 {
 	if (Char)
-	{
+	{		
 		Char->bInCombatMode = true;
 
 		SetInstigator(Char->GetController());

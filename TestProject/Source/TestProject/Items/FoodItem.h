@@ -16,11 +16,13 @@ class TESTPROJECT_API AFoodItem : public AItem
 
 public:
 
-	/** The amount by which the Player's health  will increase when this Food Item is used. */
+	/** The amount by which the Player's health  will increase when this Food Item is consumed. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item", meta = (ClampMin = 0.0))
 	float HealthToHeal;
 
 protected:
 
-	virtual void Use(class AMain* Main) override;
+
+public:
+	bool UseItem(AMain* Main) override;
 };

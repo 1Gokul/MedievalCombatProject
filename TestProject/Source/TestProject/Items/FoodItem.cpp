@@ -4,10 +4,9 @@
 #include "FoodItem.h"
 #include "Main.h"
 
-void AFoodItem::Use(AMain* Main)
+bool AFoodItem::UseItem(AMain* Main)
 {
-	if(Main)
-	{
-		Main->Health += HealthToHeal;
-	}
+	Main->IncrementHealth(HealthToHeal);
+
+	return true;
 }

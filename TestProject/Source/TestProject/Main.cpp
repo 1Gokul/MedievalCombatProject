@@ -1429,20 +1429,20 @@ void AMain::SpawnHitParticles(AEnemy* DamageCauser)
 	}
 }
 
-void AMain::UseItem(AItem* Item)
-{
-	// If not a Weapon and not a Shield
-	if (AWeapon* Weapon = Cast<AWeapon>(Item))
-	{
-		Weapon->Equip(this);
-	}
-	else if (AShield* Shield = Cast<AShield>(Item))
-	{
-		Shield->Equip(this);
-	}
-	else
-	{
-		Item->Use(this);
-		Item->OnUse(this);	// Blueprint Event
-	}
-}
+//void AMain::UseItem(AItem* Item)
+//{
+//	// If not a Weapon and not a Shield
+//	if (AWeapon* Weapon = Cast<AWeapon>(Item))
+//	{
+//		Weapon->Equip(this);
+//	}
+//	else if (AShield* Shield = Cast<AShield>(Item))
+//	{
+//		Shield->Equip(this);
+//	}
+//	else
+//	{
+//		Item->Use(this);
+//		Item->OnUse(this);	// Blueprint Event
+//	}
+//}

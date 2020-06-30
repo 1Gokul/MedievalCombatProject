@@ -130,12 +130,20 @@ public:
 	/** Override Interact() function from IInteractInterface class */
 	virtual void Interact(AActor* Interacter) override;
 
-	virtual void Use(class AMain* Main) PURE_VIRTUAL(AItem, );
+	//virtual void Use(class AMain* Main) PURE_VIRTUAL(AItem, );
 
-	UFUNCTION(BlueprintImplementableEvent)
-	void OnUse(AMain* Main);
+	/**
+	 * This Pure Virtual function gets called when the Player clicks on an Item in the Inventory Menu.
+	 * Different implementations of this function will be done in the Child classes.
+	 *
+	 * Is called in the InventoryItem_BP Widget.
+	 *
+	 * @returns true if the Item was used successfully.
+	 */
+	UFUNCTION(BlueprintCallable)
+	virtual bool UseItem(class AMain* Main);
 
-	virtual class UWorld* ItemGetWorld() const {return World;};
+	//virtual class UWorld* ItemGetWorld() const {return World;};
 	
 };
 

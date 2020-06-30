@@ -409,7 +409,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void IncrementCoins(int32 Amount);
 
-	/** Called to increase health of player if they take pick up a health potion */
+	/** Called to increase health of player if they comsume an Item that increases Health */
 	UFUNCTION(BlueprintCallable)
 	void IncrementHealth(float Amount);
 
@@ -470,6 +470,6 @@ public:
 
 	void SpawnHitParticles(AEnemy* DamageCauser);
 
-	UFUNCTION(BlueprintCallable, Category = "Items")
-	void UseItem(class AItem* Item);
+	//UFUNCTION(BlueprintCallable, Category = "Items")
+	//void UseItem(class AItem* Item);
 };
