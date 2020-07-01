@@ -329,7 +329,7 @@ void AMain::Tick(float DeltaTime)
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Main NumberOfSlots = %i"), Inventory->NumberOfSlots);
+	//UE_LOG(LogTemp, Warning, TEXT("Main NumberOfSlots = %i"), Inventory->NumberOfSlots);
 }
 
 //  Called to bind functionality to input

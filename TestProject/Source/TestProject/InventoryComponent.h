@@ -70,37 +70,43 @@ public:
 	/** Resize the Inventory to NumberOfSlots. */
 	void PrepareInventory();
 
-	/** What the above function does is only resize the Inventory.
-	 *
-	 *  But If there are Blueprint Classes that need to be added into the Inventory (like default items),
-	 *  The function below will add the Class defaults of each Blueprint class in the Inventory,
-	 *  so all default values of those blueprint classes will be added.
-	 *
-	 *  This function AddBlueprintClassDefaults() is declared in MainPlayerController_BP.
-	 */
-
 	/** Creates a stack for a particular Item.
-	 * 	@param ContentToAdd - The Item SlotStructure to add.
+	 * 	@param ContentToAdd The Item SlotStructure to add.
+	 *
+	 * 	@returns True if a Stack for the Item could be created successfully
+	 * 				and there was an available slot in the Inventory to do so.
 	 */
-	void CreateStack(FSlotStructure ContentToAdd);
+	bool CreateStack(FSlotStructure ContentToAdd);
 
 	/**
 	 * Adds the SlotStructure of the Item into the Inventory.
-	 * @param ContentToAdd - The Item SlotStructure to add.
+	 * @param ContentToAdd The Item SlotStructure to add.
 	 *
 	 * @returns True if ContentToAdd was successfully added to the Inventory.
 	 */
-	 bool AddToInventory(FSlotStructure ContentToAdd);
+	UFUNCTION(BlueprintCallable)
+	bool AddToInventory(FSlotStructure ContentToAdd);
 
 	/**
 	 * Adds a Stackable Item into its respective ItemStack in the Inventory.
 	 *
-	 * @param SlotStructure - The Item to add
-	 * @param SlotIndex - The position of the ItemStack in the Inventory.
+	 * @param SlotStructure The Item to add
+	 * @param SlotIndex The position of the ItemStack in the Inventory.
+	 *
+	 * @returns True if the Item was successfully added to the Stack.
 	 */
 
-	void AddToStack(FSlotStructure SlotStructure, int32 SlotIndex);
+	bool AddToStack(FSlotStructure SlotStructure, int32 SlotIndex);
 
-	//FORCEINLINE void SetNumberOfSlots(int32 Size){ Inventory.SetNum(Size);}
-
+	/** 
+	 * 	Receives a Query for an Item and checks if the Item is present
+	 * 	in the inventory in the required amount.
+	 *
+	 * 	@param QueryItem The Item to be searched for
+	 * 	@param QueryAmount The amount of QueryItems required
+	 *
+	 * 	@returns True if the QueryItem is available in the required QueryAmount.
+	 */
+	UFUNCTION(BlueprintCallable)
+	bool InventoryQuery(TSubclassOf<AItem> QueryItem, int32 QueryAmount);
 };

@@ -50,7 +50,7 @@ void AContainer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	UE_LOG(LogTemp, Warning, TEXT("Container NumberOfSlots = %i"), InventoryComponent->NumberOfSlots);
+	//UE_LOG(LogTemp, Warning, TEXT("Container NumberOfSlots = %i"), InventoryComponent->NumberOfSlots);
 
 }
 
