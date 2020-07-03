@@ -101,7 +101,7 @@ AMain::AMain()
 	bMovingRight = false;
 	bJumping = false;
 	bInterpToEnemy = false;
-	bIsWeaponEquipped = false;
+	bIsWeaponDrawn = false;
 
 	AttackComboSection = 0;
 	SwingSoundIndex = 0;
@@ -481,46 +481,46 @@ void AMain::LMBDown()
 	}
 
 
-	// If Player is overlapping with an Item, they can equip it 
-	if (ActiveOverlappingItem)
-	{
-		// If the Item is a Weapon
-		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
-		if (Weapon)
-		{
-			if (CurrentWeapon)
-			{
-				if (bIsWeaponEquipped)
-				{
-					OverlappingWeaponLocation = Weapon->GetActorLocation();
+	//// If Player is overlapping with an Item, they can equip it 
+	//if (ActiveOverlappingItem)
+	//{
+	//	// If the Item is a Weapon
+	//	AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
+	//	if (Weapon)
+	//	{
+	//		if (CurrentWeapon)
+	//		{
+	//			if (bIsWeaponDrawn)
+	//			{
+	//				OverlappingWeaponLocation = Weapon->GetActorLocation();
 
-					Weapon->Equip(this);
-					SetActiveOverlappingItem(nullptr);
-				}
-			}
-			else
-			{
-				OverlappingWeaponLocation = Weapon->GetActorLocation();
+	//				Weapon->Equip(this);
+	//				SetActiveOverlappingItem(nullptr);
+	//			}
+	//		}
+	//		else
+	//		{
+	//			OverlappingWeaponLocation = Weapon->GetActorLocation();
 
-				Weapon->Equip(this);
-				SetActiveOverlappingItem(nullptr);
-			}
-		}
-		else
-		{
-			AShield* Shield = Cast<AShield>(ActiveOverlappingItem);
-			if (Shield)
-			{
-				Shield->Equip(this);
-				SetActiveOverlappingItem(nullptr);
-			}
-		}
-	}
+	//			Weapon->Equip(this);
+	//			SetActiveOverlappingItem(nullptr);
+	//		}
+	//	}
+	//	else
+	//	{
+	//		AShield* Shield = Cast<AShield>(ActiveOverlappingItem);
+	//		if (Shield)
+	//		{
+	//			Shield->Equip(this);
+	//			SetActiveOverlappingItem(nullptr);
+	//		}
+	//	}
+	//}
 
-		/** else if Player already has a weapon equipped AND
-		*	is not already blocking, perform an Attack.
-		*/
-	else if (!bBlocking)
+	/** if Player already has a weapon equipped AND
+	*	is not already blocking, perform an Attack.
+	*/
+	if (!bBlocking)
 	{
 		UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
 		if (MainAnimInstance)
@@ -672,9 +672,9 @@ void AMain::SheatheWeapon()
 	bAttacking = false;
 
 
-	if (bIsWeaponEquipped && CurrentWeapon)
+	if (bIsWeaponDrawn && CurrentWeapon)
 	{
-		bIsWeaponEquipped = false;
+		bIsWeaponDrawn = false;
 
 		// Play the Sheath sound
 		if (CurrentWeapon->OnSheathSound)
@@ -701,9 +701,9 @@ void AMain::DrawWeapon()
 {
 	bInCombatMode = true;
 
-	if (!bIsWeaponEquipped && CurrentWeapon)
+	if (!bIsWeaponDrawn && CurrentWeapon)
 	{
-		bIsWeaponEquipped = true;
+		bIsWeaponDrawn = true;
 
 		// Play the Draw sound
 		if (CurrentWeapon->OnEquipSound)
@@ -826,7 +826,7 @@ void AMain::PlayMeleeAttack(int32 Section)
 		// Append Section number
 
 		// If Weapon attack
-		if (bIsWeaponEquipped)
+		if (bIsWeaponDrawn)
 		{
 			if (CurrentWeapon->bIsTwoHanded)AttackName.Append("TwoHandedAttack_");
 			else AttackName.Append("OneHandedAttack_");
@@ -1095,25 +1095,10 @@ void AMain::SetCurrentWeapon(AWeapon* WeaponToSet)
 {
 	if (CurrentWeapon)
 	{
-		// Swap weapons
-		AWeapon* Temp = WeaponToSet;
-		WeaponToSet = CurrentWeapon;
-		CurrentWeapon = Temp;
-
-		// Reset old weapon to default state
-		WeaponToSet->SetWeaponState(EWeaponState::EWS_Pickup);
-		WeaponToSet->bShouldRotate = true;
-		WeaponToSet->SkeletalMesh->SetSimulatePhysics(true);
-
-		// Detach from Character
-		FDetachmentTransformRules DetachRules = FDetachmentTransformRules::KeepWorldTransform;
-		WeaponToSet->DetachFromActor(DetachRules);
-
-		// Set it at the location of the new weapon
-		WeaponToSet->SetActorLocation(OverlappingWeaponLocation);
+		CurrentWeapon->Destroy();
 	}
 
-	else CurrentWeapon = WeaponToSet;
+	CurrentWeapon = WeaponToSet;
 }
 
 

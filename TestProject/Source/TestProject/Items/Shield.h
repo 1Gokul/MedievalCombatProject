@@ -58,6 +58,7 @@ protected:
 	void BeginPlay() override;
 
 public:
+	bool UseItem(AMain* Main) override;
 
 	/**Called if an Overlap Event starts. */
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -77,5 +78,5 @@ public:
 
 	FORCEINLINE EShieldState GetShieldState() { return ShieldState; }
 
-	FORCEINLINE void SetInstigator(AController* Instigator) { ShieldInstigator = Instigator; }
+	FORCEINLINE void SetInstigator(AController* Shield_Instigator) { ShieldInstigator = Shield_Instigator; }
 };

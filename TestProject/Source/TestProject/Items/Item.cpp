@@ -90,8 +90,8 @@ void AItem::Interact(AActor* Interacter)
 	UInventoryComponent* OwningInventory = Cast<UInventoryComponent>(InventoryComponent);*/
 
 	//// Disable Collision Volume of Item
-	//CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//CollisionVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
+	/*CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CollisionVolume->SetCollisionResponseToAllChannels(ECR_Ignore);*/
 	
 	// Cast to Main
 	AMain* Main = Cast<AMain>(Interacter);

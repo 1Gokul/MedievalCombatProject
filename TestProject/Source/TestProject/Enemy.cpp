@@ -349,7 +349,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 					}
 
 						//If Player is blocking with weapon and has enough stamina to successfully block an attack
-					else if (Main->bIsWeaponEquipped && Main->Stamina - Main->CurrentWeapon->BlockStaminaCost >= 0)
+					else if (Main->bIsWeaponDrawn && Main->Stamina - Main->CurrentWeapon->BlockStaminaCost >= 0)
 					{
 						//Weapons don't block attacks completely
 						if (DamageTypeClass)

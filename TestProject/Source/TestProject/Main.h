@@ -68,7 +68,7 @@ public:
 	class AWeapon* CurrentWeapon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
-	bool bIsWeaponEquipped;
+	bool bIsWeaponDrawn;
 
 	/** The Shield that the Character is currently using */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")

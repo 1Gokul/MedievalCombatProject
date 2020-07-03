@@ -10,7 +10,8 @@ UENUM(BlueprintType)
 enum class EWeaponState : uint8
 {
 	EWS_Pickup UMETA(DisplayName = "Pickup"),
-	EWS_Equipped UMETA(DisplayName = "Equipped"),
+	EWS_Sheathed UMETA(DisplayName = "Sheathed"),
+	EWS_Drawn UMETA(DisplayName = "Drawn"),
 
 	EWS_MAX UMETA(DisplayName = "DefaultMAX")
 };
@@ -96,6 +97,8 @@ protected:
 
 public:
 
+	bool UseItem(AMain* Main) override;
+
 	/**Called if an Overlap Event starts. */
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	                    int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
@@ -137,5 +140,5 @@ public:
 
 	FORCEINLINE EWeaponState GetWeaponState() { return WeaponState; }
 
-	FORCEINLINE void SetInstigator(AController* Instigator) { WeaponInstigator = Instigator; }
+	FORCEINLINE void SetInstigator(AController* Weapon_Instigator) { WeaponInstigator = Weapon_Instigator; }
 };

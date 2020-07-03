@@ -5,6 +5,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Main.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Components/SphereComponent.h"
 #include "Sound/SoundCue.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -61,6 +62,38 @@ void AWeapon::BeginPlay()
 		SheathSocketName = FName("LeftThighSocket");
 		HandSocketName = FName("RightHandSocket_OneHanded");
 	}
+}
+
+bool AWeapon::UseItem(AMain* Main)
+{
+	Main->SetCurrentWeapon(this);
+
+	CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CollisionVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
+	
+	SetInstigator(Main->GetController());
+	SkeletalMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	SkeletalMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+
+	SkeletalMesh->SetSimulatePhysics(false);
+
+	bShouldRotate = false;
+
+	if (!bWeaponParticles)
+	{
+		IdleParticlesComponent->Deactivate();
+	}
+
+	if(Main->bIsWeaponDrawn)
+	{
+		Unsheathe(Main);
+	}
+	else
+	{
+		Sheath(Main);
+	}
+
+	return true;
 }
 
 void AWeapon::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -160,6 +193,9 @@ void AWeapon::Equip(AMain* Char)
 {
 	if (Char)
 	{
+		CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		CollisionVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
+		
 		Char->bInCombatMode = true;
 
 		SetInstigator(Char->GetController());
@@ -175,7 +211,6 @@ void AWeapon::Equip(AMain* Char)
 			RightHandSocket->AttachActor(this, Char->GetMesh());
 			bShouldRotate = false;
 			Char->SetCurrentWeapon(this);
-			Char->bIsWeaponEquipped = true;
 			Char->SetActiveOverlappingItem(nullptr);
 		}
 

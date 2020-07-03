@@ -2,10 +2,11 @@
 
 
 #include "FoodItem.h"
+#include "InventoryComponent.h"
 #include "Main.h"
 
 bool AFoodItem::UseItem(AMain* Main)
-{
+{	
 	Main->IncrementHealth(HealthToHeal);
 
 	return true;

@@ -24,6 +24,29 @@ void AShield::BeginPlay()
 	Super::BeginPlay();
 }
 
+bool AShield::UseItem(AMain* Main)
+{
+	SetInstigator(Main->GetController());
+		StaticMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		StaticMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+
+		StaticMesh->SetSimulatePhysics(false);
+
+		const USkeletalMeshSocket* LeftHandSocket = Main->GetMesh()->GetSocketByName("LeftHandSocket");
+
+
+		if (LeftHandSocket)
+		{
+			LeftHandSocket->AttachActor(this, Main->GetMesh());
+			bShouldRotate = false;
+			Main->SetEquippedShield(this);
+			Main->SetActiveOverlappingItem(nullptr);
+		}
+
+	return true;
+}
+
+
 void AShield::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                              UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                              const FHitResult& SweepResult)
