@@ -92,12 +92,14 @@ void AItem::Interact(AActor* Interacter)
 	//// Disable Collision Volume of Item
 	/*CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CollisionVolume->SetCollisionResponseToAllChannels(ECR_Ignore);*/
-	
+
 	// Cast to Main
 	AMain* Main = Cast<AMain>(Interacter);
 
-	if(Main)
+	if (Main)
 	{
+		Main->ResetIdleTimer();
+		
 		//Add values to a SlotStructure Object
 		FSlotStructure SlotStructure;
 		SlotStructure.ItemStructure = ItemStructure;
@@ -106,11 +108,13 @@ void AItem::Interact(AActor* Interacter)
 		// Add the object to the Inventory
 		bool Success = Main->Inventory->AddToInventory(SlotStructure);
 
-		if(Success)Destroy();
+		if (Success)Destroy();
 	}
 }
 
 bool AItem::UseItem(AMain* Main)
 {
+	Main->ResetIdleTimer();
+	
 	return true;
 }

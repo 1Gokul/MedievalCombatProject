@@ -12,8 +12,8 @@ UCLASS()
 class TESTPROJECT_API AContainer : public AActor, public IInteractInterface
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AContainer();
 
@@ -31,12 +31,12 @@ public:
 
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	void Tick(float DeltaTime) override;
 
 	/** Override InteractInterface */
-	virtual void Interact(AActor* Interacter) override;
+	void Interact(AActor* Interacter) override;
 };

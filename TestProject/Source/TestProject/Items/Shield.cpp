@@ -9,6 +9,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Enemy.h"
+#include "Weapon.h"
+#include "Components/SphereComponent.h"
 
 AShield::AShield()
 {
@@ -26,22 +28,36 @@ void AShield::BeginPlay()
 
 bool AShield::UseItem(AMain* Main)
 {
-	SetInstigator(Main->GetController());
-		StaticMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-		StaticMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-
-		StaticMesh->SetSimulatePhysics(false);
-
-		const USkeletalMeshSocket* LeftHandSocket = Main->GetMesh()->GetSocketByName("LeftHandSocket");
-
-
-		if (LeftHandSocket)
+	// Call the base function
+	Super::UseItem(Main);
+	
+	if (Main->CurrentWeapon)
+	{
+		if (Main->CurrentWeapon->bIsTwoHanded)
 		{
-			LeftHandSocket->AttachActor(this, Main->GetMesh());
-			bShouldRotate = false;
-			Main->SetEquippedShield(this);
-			Main->SetActiveOverlappingItem(nullptr);
+			Main->CurrentWeapon->Destroy();
+			Main->SetCurrentWeapon(nullptr);
 		}
+	}
+	CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CollisionVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	SetInstigator(Main->GetController());
+	StaticMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	StaticMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+
+	StaticMesh->SetSimulatePhysics(false);
+
+	const USkeletalMeshSocket* LeftHandSocket = Main->GetMesh()->GetSocketByName("LeftHandSocket");
+
+
+	if (LeftHandSocket)
+	{
+		LeftHandSocket->AttachActor(this, Main->GetMesh());
+		bShouldRotate = false;
+		Main->SetEquippedShield(this);
+		Main->SetActiveOverlappingItem(nullptr);
+	}
 
 	return true;
 }
@@ -84,7 +100,7 @@ void AShield::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 void AShield::Equip(AMain* Char)
 {
 	if (Char)
-	{		
+	{
 		Char->bInCombatMode = true;
 
 		SetInstigator(Char->GetController());

@@ -130,11 +130,11 @@ public:
 
 	void Equip(class AMain* Char);
 
-	UFUNCTION(BlueprintCallable)
-	void Sheath(AMain* Char);
+	//UFUNCTION(BlueprintCallable)
+	//void Sheath(AMain* Char);
 
-	UFUNCTION(BlueprintCallable)
-	void Unsheathe(AMain* Char);
+	//UFUNCTION(BlueprintCallable)
+	//void Unsheathe(AMain* Char);
 
 	FORCEINLINE void SetWeaponState(EWeaponState State) { WeaponState = State; }
 

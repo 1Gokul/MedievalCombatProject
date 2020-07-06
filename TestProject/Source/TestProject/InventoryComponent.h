@@ -37,20 +37,20 @@ struct FSlotStructure
 	int32 Quantity;
 };
 
- static bool operator==(const FSlotStructure &arg1, const FSlotStructure &arg2)
- {
-	 return (arg1.ItemStructure.ItemDisplayName == arg2.ItemStructure.ItemDisplayName);
- }
+static bool operator==(const FSlotStructure& arg1, const FSlotStructure& arg2)
+{
+	return (arg1.ItemStructure.ItemDisplayName == arg2.ItemStructure.ItemDisplayName);
+}
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESTPROJECT_API UInventoryComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	// Sets default values for this component's properties
 	UInventoryComponent();
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Inventory")
 	FText InventoryName;
 
@@ -62,11 +62,11 @@ public:
 
 protected:
 	// Called when the game starts
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
 public:
 
-	
+
 	/** Resize the Inventory to NumberOfSlots. */
 	void PrepareInventory();
 
@@ -109,4 +109,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	bool InventoryQuery(TSubclassOf<AItem> QueryItem, int32 QueryAmount);
+
+	/**
+	 * This function removes the equipped weapon or shield from the Player if
+	 * the Weapon/Shield to be added is the same as the Current Weapon/Shield
+	 * that the Player has equipped.
+	 */
+
+	UFUNCTION(BlueprintCallable)
+	bool ShouldUnequipWeaponOrShield(TSubclassOf<AItem> ItemToCheck, AMain* Main);
 };

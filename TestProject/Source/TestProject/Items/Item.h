@@ -19,12 +19,12 @@ struct FItemStructure
 	/** The display name for this item in the inventory */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
 	FName ItemDisplayName;
-	
+
 	/** The Text for using the Item i.e "Eat", "Equip" etc. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
 	FName UseActionText;
 
-		/** Optional description of the item */
+	/** Optional description of the item */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info", meta = (MultiLine = true))
 	FString ItemDescription;
 
@@ -55,7 +55,6 @@ struct FItemStructure
 	/** Item class reference */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
 	TSubclassOf<class AItem> ItemClass;
-	
 };
 
 
@@ -107,7 +106,7 @@ public:
 	//UPROPERTY()
 	//class UInventoryComponent* OwningInventory; 
 
-	
+
 protected:
 	// Called when the game starts or when spawned
 	void BeginPlay() override;
@@ -128,7 +127,7 @@ public:
 	                          UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	/** Override Interact() function from IInteractInterface class */
-	virtual void Interact(AActor* Interacter) override;
+	void Interact(AActor* Interacter) override;
 
 	//virtual void Use(class AMain* Main) PURE_VIRTUAL(AItem, );
 
@@ -144,7 +143,4 @@ public:
 	virtual bool UseItem(class AMain* Main);
 
 	//virtual class UWorld* ItemGetWorld() const {return World;};
-	
 };
-
-

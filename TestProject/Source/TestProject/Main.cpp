@@ -65,7 +65,7 @@ AMain::AMain()
 	GetCharacterMovement()->RotationRate = FRotator(0.0, 1000.0f, 0.0f);
 	GetCharacterMovement()->JumpZVelocity = 650.0f;
 	GetCharacterMovement()->AirControl = 0.20f;
-	
+
 
 	//  Player Stats
 	MaxHealth = 100.0f;
@@ -159,17 +159,10 @@ void AMain::BeginPlay()
 	{
 		MainPlayerController->GameModeOnly();
 	}
-
-	
 }
 
-//  Called every frame
-void AMain::Tick(float DeltaTime)
+void AMain::CheckPlayerStatus()
 {
-	Super::Tick(DeltaTime);
-
-	if (MovementStatus == EMovementStatus::EMS_Dead)return;
-
 	if (bInCombatMode)
 	{
 		if (CurrentWeapon)
@@ -187,6 +180,16 @@ void AMain::Tick(float DeltaTime)
 	{
 		SetPlayerStatus(EPlayerStatus::EPS_UnarmedIdle);
 	}
+}
+
+//  Called every frame
+void AMain::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (MovementStatus == EMovementStatus::EMS_Dead)return;
+
+	CheckPlayerStatus();
 
 	//  Decrease in Stamina per second when sprinting.
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
@@ -394,7 +397,7 @@ void AMain::ResetIdleTimer()
 	IdleAnimSlot = 0;
 
 	// Pause IdleAnimTimerHandle if Active
-	if(GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle))
+	if (GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle))
 	{
 		GetWorldTimerManager().PauseTimer(IdleAnimTimerHandle);
 	}
@@ -560,9 +563,8 @@ void AMain::RMBDown()
 	*/
 	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Dead)
 	{
-
 		ResetIdleTimer();
-		
+
 		// Blocking with a Weapon should only be allowed if the weapon is Two-Handed.
 		if (CurrentWeapon && !EquippedShield)
 		{
@@ -622,7 +624,8 @@ void AMain::ESCDown()
 	if (MainPlayerController)
 	{
 		// If a UI Widget (Other than the HUD) is not currently active, display the Pause menu.
-		if(!MainPlayerController->bInventoryMenuVisible){
+		if (!MainPlayerController->bInventoryMenuVisible)
+		{
 			MainPlayerController->TogglePauseMenu();
 		}
 	}
@@ -697,6 +700,23 @@ void AMain::SheatheWeapon()
 	}
 }
 
+void AMain::TimedSheathe()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->DeactivateCollision();
+
+		CurrentWeapon->SetInstigator(nullptr);
+
+		const USkeletalMeshSocket* SheathSocket = GetMesh()->GetSocketByName(CurrentWeapon->SheathSocketName);
+
+		if (SheathSocket)
+		{
+			SheathSocket->AttachActor(CurrentWeapon, GetMesh());
+		}
+	}
+}
+
 void AMain::DrawWeapon()
 {
 	bInCombatMode = true;
@@ -721,6 +741,21 @@ void AMain::DrawWeapon()
 			if (CurrentWeapon->bIsTwoHanded)
 				AnimInstance->Montage_JumpToSection(FName("DrawWeapon_TwoHanded"), UpperBodyMontage);
 			else AnimInstance->Montage_JumpToSection(FName("DrawWeapon_OneHanded"), UpperBodyMontage);
+		}
+	}
+}
+
+void AMain::TimedDraw()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->SetInstigator(nullptr);
+
+		const USkeletalMeshSocket* RightHandSocket = GetMesh()->GetSocketByName(CurrentWeapon->HandSocketName);
+
+		if (RightHandSocket)
+		{
+			RightHandSocket->AttachActor(CurrentWeapon, GetMesh());
 		}
 	}
 }
@@ -763,13 +798,12 @@ void AMain::TabDown()
 {
 	bTabDown = true;
 
-	if(MainPlayerController)
+	if (MainPlayerController)
 	{
 		// If a UI Widget (Other than the HUD) is not currently active, display the Inventory menu.
-		if(!MainPlayerController->bPauseMenuVisible){
-
+		if (!MainPlayerController->bPauseMenuVisible)
+		{
 			MainPlayerController->ToggleInventoryMenu(Inventory);
-			
 		}
 	}
 }
@@ -788,9 +822,9 @@ void AMain::EKeyDown()
 	GetOverlappingActors(OverlappingActors, ActorFilter);
 
 	for (AActor* OverlappingActor : OverlappingActors)
-	{		
+	{
 		//  if the OverlappingActor implements UInteractInterface
-		if(OverlappingActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
+		if (OverlappingActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
 		{
 			// Execute Interact()
 			Cast<IInteractInterface>(OverlappingActor)->Interact(this);
@@ -902,7 +936,7 @@ void AMain::ResetMeleeAttackComboSection()
 void AMain::MeleeAttack()
 {
 	ResetIdleTimer();
-	
+
 	if (!bAttacking && (MovementStatus != EMovementStatus::EMS_Dead))
 	{
 		bAttacking = true;

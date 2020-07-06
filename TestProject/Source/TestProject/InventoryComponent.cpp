@@ -2,8 +2,12 @@
 
 
 #include "InventoryComponent.h"
+
+#include "Main.h"
 #include "Engine/SCS_Node.h"
 #include "Engine/SimpleConstructionScript.h"
+#include "Items/Shield.h"
+#include "Items/Weapon.h"
 
 //Sets default values for a FSlotStructure object
 FSlotStructure::FSlotStructure()
@@ -176,16 +180,54 @@ bool UInventoryComponent::AddToStack(FSlotStructure SlotStructure, int32 SlotInd
 
 bool UInventoryComponent::InventoryQuery(TSubclassOf<AItem> QueryItem, int32 QueryAmount)
 {
-	bool Success = false;
-	
+	int32 RunningTotal = 0;
+
 	for (FSlotStructure Element : Inventory)
 	{
-		if((Element.ItemStructure.ItemClass == QueryItem) && (Element.Quantity >= QueryAmount))
+		if (Element.ItemStructure.ItemClass == QueryItem)
 		{
-			Success = true;
-			break;
+			RunningTotal += Element.Quantity;
 		}
 	}
 
-	return Success;
+	return (RunningTotal >= QueryAmount);
+}
+
+bool UInventoryComponent::ShouldUnequipWeaponOrShield(TSubclassOf<AItem> ItemToCheck, AMain* Main)
+{
+	if (Main->CurrentWeapon)
+	{
+		if (ItemToCheck == Main->CurrentWeapon->GetClass())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Same as weapon!!"));
+
+			AWeapon* Temp = Main->CurrentWeapon;
+			Main->SetCurrentWeapon(nullptr);
+
+			Temp->Destroy();
+
+			Main->bIsWeaponDrawn = false;
+
+			return true;
+		}
+	}
+	else if (Main->EquippedShield/* && Shield*/)
+	{
+		if (ItemToCheck == Main->EquippedShield->GetClass())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Same as shield!!"));
+
+			AShield* Temp = Main->EquippedShield;
+			Main->SetEquippedShield(nullptr);
+
+			Temp->Destroy();
+
+			//Main->CheckPlayerStatus();
+
+			return true;
+		}
+	}
+
+		return false;
+	
 }

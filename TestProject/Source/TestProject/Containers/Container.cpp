@@ -10,7 +10,7 @@
 // Sets default values
 AContainer::AContainer()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	// Container Collision Box
@@ -20,13 +20,12 @@ AContainer::AContainer()
 	// Container Mesh
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
 	StaticMesh->SetupAttachment(GetRootComponent());
-	
+
 	// Setup Inventory
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
 	InventoryComponent->InventoryName = FText::FromString("Container");
-	
-	InventoryComponent->NumberOfSlots = 8;
 
+	InventoryComponent->NumberOfSlots = 8;
 }
 
 // Called when the game starts or when spawned
@@ -35,14 +34,13 @@ void AContainer::BeginPlay()
 	Super::BeginPlay();
 
 	// Add all elements of Items into the InventoryComponent
-	for (int i = 0; i<Items.Num();i++)
+	for (int i = 0; i < Items.Num(); i++)
 	{
-		if(InventoryComponent->Inventory.IsValidIndex(i)){
+		if (InventoryComponent->Inventory.IsValidIndex(i))
+		{
 			InventoryComponent->Inventory[i] = Items[i];
 		}
 	}
-
-	
 }
 
 // Called every frame
@@ -51,7 +49,6 @@ void AContainer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	//UE_LOG(LogTemp, Warning, TEXT("Container NumberOfSlots = %i"), InventoryComponent->NumberOfSlots);
-
 }
 
 void AContainer::Interact(AActor* Interacter)
@@ -62,4 +59,3 @@ void AContainer::Interact(AActor* Interacter)
 	// Display this Container's Inventory
 	Main->MainPlayerController->ToggleInventoryMenu(InventoryComponent);
 }
-

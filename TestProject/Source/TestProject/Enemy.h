@@ -117,8 +117,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TSubclassOf<UDamageType> DamageTypeClass;
 
-	
-	
 
 protected:
 	// Called when the game starts or when spawned

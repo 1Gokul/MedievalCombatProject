@@ -49,7 +49,6 @@ void AMainPlayerController::BeginPlay()
 			PauseMenu->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
-
 }
 
 void AMainPlayerController::Tick(float DeltaTime)
@@ -89,19 +88,17 @@ void AMainPlayerController::GameAndUIMode()
 
 bool AMainPlayerController::bUIWidgetCurrentlyActive()
 {
-	return(bInventoryMenuVisible || bPauseMenuVisible);
+	return (bInventoryMenuVisible || bPauseMenuVisible);
 }
 
 
 void AMainPlayerController::DisplayEnemyHealthBar()
 {
-	
 	if (EnemyHealthBar)
 	{
 		bEnemyHealthBarVisible = true;
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Visible);
 	}
-	
 }
 
 void AMainPlayerController::RemoveEnemyHealthBar()
@@ -127,7 +124,7 @@ void AMainPlayerController::TogglePauseMenu()
 
 void AMainPlayerController::ToggleInventoryMenu(UInventoryComponent* InventoryComponent)
 {
-	if(bInventoryMenuVisible)
+	if (bInventoryMenuVisible)
 	{
 		RemoveInventoryMenu();
 	}
@@ -140,11 +137,12 @@ void AMainPlayerController::ToggleInventoryMenu(UInventoryComponent* InventoryCo
 void AMainPlayerController::DisplayPauseMenu_Implementation()
 {
 	// Hide the HUD
-	if(bHUDVisible){
+	if (bHUDVisible)
+	{
 		HUDOverlay->SetVisibility(ESlateVisibility::Hidden);
 		bHUDVisible = false;
 	}
-	
+
 	if (PauseMenu)
 	{
 		bPauseMenuVisible = true;
@@ -154,7 +152,7 @@ void AMainPlayerController::DisplayPauseMenu_Implementation()
 		PauseMenu->SetVisibility(ESlateVisibility::Visible);
 
 		GameAndUIMode();
-		
+
 		bShowMouseCursor = true;
 	}
 }
@@ -162,11 +160,12 @@ void AMainPlayerController::DisplayPauseMenu_Implementation()
 void AMainPlayerController::RemovePauseMenu_Implementation()
 {
 	// Show the HUD
-	if(!bHUDVisible){
+	if (!bHUDVisible)
+	{
 		HUDOverlay->SetVisibility(ESlateVisibility::Visible);
 		bHUDVisible = true;
 	}
-	
+
 	if (PauseMenu)
 	{
 		UGameplayStatics::SetGamePaused(GetWorld(), false);
@@ -179,50 +178,45 @@ void AMainPlayerController::RemovePauseMenu_Implementation()
 
 		bPauseMenuVisible = false;
 	}
-	
 }
 
 void AMainPlayerController::DisplayInventoryMenu_Implementation(UInventoryComponent* InventoryComponent)
 {
 	// Hide the HUD
-	if(bHUDVisible){
+	if (bHUDVisible)
+	{
 		HUDOverlay->SetVisibility(ESlateVisibility::Hidden);
 		bHUDVisible = false;
 	}
 
-		InventoryComponent->PrepareInventory();
-	
-		bInventoryMenuVisible = true;
+	InventoryComponent->PrepareInventory();
 
-		UGameplayStatics::SetGamePaused(GetWorld(), true);
+	bInventoryMenuVisible = true;
 
-		//InventoryMenu->SetVisibility(ESlateVisibility::Visible);
+	UGameplayStatics::SetGamePaused(GetWorld(), true);
 
-		GameAndUIMode();
-		
-		bShowMouseCursor = true;
-	
+	//InventoryMenu->SetVisibility(ESlateVisibility::Visible);
+
+	GameAndUIMode();
+
+	bShowMouseCursor = true;
 }
 
 
 void AMainPlayerController::RemoveInventoryMenu_Implementation()
 {
 	// Show the HUD
-	if(!bHUDVisible){
+	if (!bHUDVisible)
+	{
 		HUDOverlay->SetVisibility(ESlateVisibility::Visible);
 		bHUDVisible = true;
 	}
 
-		bInventoryMenuVisible = false;
-		
-		UGameplayStatics::SetGamePaused(GetWorld(), false);			
+	bInventoryMenuVisible = false;
 
-		GameModeOnly();
+	UGameplayStatics::SetGamePaused(GetWorld(), false);
 
-		bShowMouseCursor = false;
+	GameModeOnly();
 
-		
-	
+	bShowMouseCursor = false;
 }
-
-

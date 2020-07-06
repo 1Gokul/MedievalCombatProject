@@ -12,7 +12,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Engine/SkeletalMeshSocket.h"																		   
+#include "Engine/SkeletalMeshSocket.h"
 #include "Sound/SoundCue.h"
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
@@ -480,28 +480,28 @@ void AEnemy::Attack()
 				AnimInstance->Montage_Play(CombatMontage, 1.0f);
 				AnimInstance->Montage_JumpToSection(FName(*AttackName), CombatMontage);
 
-			/*	switch (AttackSection)
-				{
-				case 0:
-					AnimInstance->Montage_Play(CombatMontage, 1.0f);
-					AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
-					
-					break;
-
-				case 1:
-					AnimInstance->Montage_Play(CombatMontage, 1.0f);
-					AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
-					break;
-
-				case 2:
-					AnimInstance->Montage_Play(CombatMontage, 1.0f);
-					AnimInstance->Montage_JumpToSection(FName("Attack_3"), CombatMontage);
-					CurrentAttackTipSocket = Attack2_TipSocket;
-					break;
-
-				default:
-					break;
-				}*/
+				/*	switch (AttackSection)
+					{
+					case 0:
+						AnimInstance->Montage_Play(CombatMontage, 1.0f);
+						AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
+						
+						break;
+	
+					case 1:
+						AnimInstance->Montage_Play(CombatMontage, 1.0f);
+						AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
+						break;
+	
+					case 2:
+						AnimInstance->Montage_Play(CombatMontage, 1.0f);
+						AnimInstance->Montage_JumpToSection(FName("Attack_3"), CombatMontage);
+						CurrentAttackTipSocket = Attack2_TipSocket;
+						break;
+	
+					default:
+						break;
+					}*/
 			}
 		}
 	}

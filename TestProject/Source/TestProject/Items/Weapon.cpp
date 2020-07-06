@@ -11,6 +11,7 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Components/BoxComponent.h"
 #include "Enemy.h"
+#include "Shield.h"
 
 
 AWeapon::AWeapon()
@@ -66,11 +67,23 @@ void AWeapon::BeginPlay()
 
 bool AWeapon::UseItem(AMain* Main)
 {
+	// Call the base function
+	Super::UseItem(Main);
+	
+	if (bIsTwoHanded)
+	{
+		if (Main->EquippedShield)
+		{
+			Main->EquippedShield->Destroy();
+			Main->SetEquippedShield(nullptr);
+		}
+	}
+
 	Main->SetCurrentWeapon(this);
 
 	CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CollisionVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
-	
+
 	SetInstigator(Main->GetController());
 	SkeletalMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	SkeletalMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
@@ -84,13 +97,13 @@ bool AWeapon::UseItem(AMain* Main)
 		IdleParticlesComponent->Deactivate();
 	}
 
-	if(Main->bIsWeaponDrawn)
+	// Attach Weapon to Sheath Socket.
+	Main->TimedSheathe();
+
+	// If in Combat Mode, draw the weapon.
+	if (Main->bInCombatMode)
 	{
-		Unsheathe(Main);
-	}
-	else
-	{
-		Sheath(Main);
+		Main->DrawWeapon();
 	}
 
 	return true;
@@ -195,7 +208,7 @@ void AWeapon::Equip(AMain* Char)
 	{
 		CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		CollisionVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
-		
+
 		Char->bInCombatMode = true;
 
 		SetInstigator(Char->GetController());
@@ -226,34 +239,34 @@ void AWeapon::Equip(AMain* Char)
 	}
 }
 
-void AWeapon::Sheath(AMain* Char)
-{
-	if (Char)
-	{
-		DeactivateCollision();
-
-		SetInstigator(nullptr);
-
-		const USkeletalMeshSocket* SheathSocket = Char->GetMesh()->GetSocketByName(SheathSocketName);
-
-		if (SheathSocket)
-		{
-			SheathSocket->AttachActor(this, Char->GetMesh());
-		}
-	}
-}
-
-void AWeapon::Unsheathe(AMain* Char)
-{
-	if (Char)
-	{
-		SetInstigator(nullptr);
-
-		const USkeletalMeshSocket* RightHandSocket = Char->GetMesh()->GetSocketByName(HandSocketName);
-
-		if (RightHandSocket)
-		{
-			RightHandSocket->AttachActor(this, Char->GetMesh());
-		}
-	}
-}
+//void AWeapon::Sheath(AMain* Char)
+//{
+//	if (Char)
+//	{
+//		DeactivateCollision();
+//
+//		SetInstigator(nullptr);
+//
+//		const USkeletalMeshSocket* SheathSocket = Char->GetMesh()->GetSocketByName(SheathSocketName);
+//
+//		if (SheathSocket)
+//		{
+//			SheathSocket->AttachActor(this, Char->GetMesh());
+//		}
+//	}
+//}
+//
+//void AWeapon::Unsheathe(AMain* Char)
+//{
+//	if (Char)
+//	{
+//		SetInstigator(nullptr);
+//
+//		const USkeletalMeshSocket* RightHandSocket = Char->GetMesh()->GetSocketByName(HandSocketName);
+//
+//		if (RightHandSocket)
+//		{
+//			RightHandSocket->AttachActor(this, Char->GetMesh());
+//		}
+//	}
+//}

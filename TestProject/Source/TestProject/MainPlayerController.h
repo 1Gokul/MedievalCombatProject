@@ -28,7 +28,7 @@ public:
 	bool bUIWidgetCurrentlyActive();
 
 	/** For Player HUD	*/
-	
+
 	/** Reference to the UMG asset in the editor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> HUDOverlayAsset;
@@ -83,5 +83,5 @@ public:
 	void DisplayInventoryMenu(class UInventoryComponent* InventoryComponent);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
-	void RemoveInventoryMenu();	
+	void RemoveInventoryMenu();
 };
