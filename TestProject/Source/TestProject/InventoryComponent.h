@@ -55,7 +55,7 @@ public:
 	FText InventoryName;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Inventory")
-	int32 NumberOfSlots;
+	int32 NumberOfSlots = 21;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "SlotStructure")
 	TArray<FSlotStructure> Inventory;
@@ -118,4 +118,5 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool ShouldUnequipWeaponOrShield(TSubclassOf<AItem> ItemToCheck, AMain* Main);
+
 };

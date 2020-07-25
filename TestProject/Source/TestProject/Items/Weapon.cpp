@@ -70,6 +70,7 @@ bool AWeapon::UseItem(AMain* Main)
 	// Call the base function
 	Super::UseItem(Main);
 	
+	// If this is a Two-Handed Weapon, remove the equipped Shield, if any
 	if (bIsTwoHanded)
 	{
 		if (Main->EquippedShield)
@@ -79,8 +80,9 @@ bool AWeapon::UseItem(AMain* Main)
 		}
 	}
 
-	Main->SetCurrentWeapon(this);
+	Main->SetEquippedWeapon(this);
 
+	// Disable collision of the CollisionVolume
 	CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CollisionVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
 
@@ -100,9 +102,12 @@ bool AWeapon::UseItem(AMain* Main)
 	// Attach Weapon to Sheath Socket.
 	Main->TimedSheathe();
 
+	// Set bIsWeaponDrawn as false as the Weapon is sheathed.
+	Main->bIsWeaponDrawn = false;
+
 	// If in Combat Mode, draw the weapon.
 	if (Main->bInCombatMode)
-	{
+	{ 		
 		Main->DrawWeapon();
 	}
 
@@ -149,10 +154,13 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 	if (OtherActor)
 	{
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+
+		// If OtherActor is an Enemy
 		if (Enemy)
 		{
 			//DeactivateCollision();
 
+			// Deactivate CombatCollisions of the Enemy in case their attack was interrupted
 			Enemy->DeactivateCollisionLeft();
 			Enemy->DeactivateCollisionRight();
 
@@ -161,9 +169,6 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 			//Play Enemy Impact Animation
 			Enemy->Impact(MainAttackSection);
 
-
-			//Enemy->bAttacking = false;
-
 			if (Enemy->HitParticles)
 			{
 				const USkeletalMeshSocket* WeaponSocket = SkeletalMesh->GetSocketByName("WeaponSocket");
@@ -171,6 +176,8 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 				if (WeaponSocket)
 				{
 					FVector SocketLocation = WeaponSocket->GetSocketLocation(SkeletalMesh);
+
+					// Spawn a particle effect at WeaponSocket
 					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Enemy->HitParticles, SocketLocation,
 					                                         FRotator(0.0f), true);
 				}
@@ -179,6 +186,7 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 			{
 				UGameplayStatics::PlaySound2D(this, Enemy->HitSound);
 			}
+			// Inflict damage on the Enemy
 			if (DamageTypeClass)
 			{
 				UGameplayStatics::ApplyDamage(Enemy, Damage, WeaponInstigator, this, DamageTypeClass);
@@ -223,7 +231,7 @@ void AWeapon::Equip(AMain* Char)
 		{
 			RightHandSocket->AttachActor(this, Char->GetMesh());
 			bShouldRotate = false;
-			Char->SetCurrentWeapon(this);
+			Char->SetEquippedWeapon(this);
 			Char->SetActiveOverlappingItem(nullptr);
 		}
 

@@ -9,6 +9,7 @@ UGameSave::UGameSave()
 
 	UserIndex = 0;
 
-	CharacterStats.WeaponName = TEXT("");
+	CharacterStats.EquippedWeaponName = TEXT("");
 	CharacterStats.LevelName = TEXT("");
+
 }

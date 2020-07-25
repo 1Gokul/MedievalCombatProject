@@ -93,7 +93,7 @@ void AItem::Interact(AActor* Interacter)
 	/*CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CollisionVolume->SetCollisionResponseToAllChannels(ECR_Ignore);*/
 
-	// Cast to Main
+	// Cast Interacter to Main
 	AMain* Main = Cast<AMain>(Interacter);
 
 	if (Main)
@@ -106,7 +106,7 @@ void AItem::Interact(AActor* Interacter)
 		SlotStructure.Quantity = 1;
 
 		// Add the object to the Inventory
-		bool Success = Main->Inventory->AddToInventory(SlotStructure);
+		bool Success = Main->InventoryComponent->AddToInventory(SlotStructure);
 
 		if (Success)Destroy();
 	}

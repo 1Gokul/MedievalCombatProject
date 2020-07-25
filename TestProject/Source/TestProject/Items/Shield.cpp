@@ -31,12 +31,12 @@ bool AShield::UseItem(AMain* Main)
 	// Call the base function
 	Super::UseItem(Main);
 	
-	if (Main->CurrentWeapon)
+	if (Main->EquippedWeapon)
 	{
-		if (Main->CurrentWeapon->bIsTwoHanded)
+		if (Main->EquippedWeapon->bIsTwoHanded)
 		{
-			Main->CurrentWeapon->Destroy();
-			Main->SetCurrentWeapon(nullptr);
+			Main->EquippedWeapon->Destroy();
+			Main->SetEquippedWeapon(nullptr);
 		}
 	}
 	CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);

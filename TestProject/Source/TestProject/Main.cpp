@@ -47,8 +47,8 @@ AMain::AMain()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);	// Attach camera to end of spring arm 
 	FollowCamera->bUsePawnControlRotation = false;	// Will stay fixed to CameraBoom and will not rotate
 
-	Inventory = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
-	Inventory->NumberOfSlots = 21;
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
+	InventoryComponent->NumberOfSlots = 42;
 
 	// Set out turn rates for input
 	BaseTurnRate = 65.0f;
@@ -165,9 +165,9 @@ void AMain::CheckPlayerStatus()
 {
 	if (bInCombatMode)
 	{
-		if (CurrentWeapon)
+		if (EquippedWeapon)
 		{
-			if (CurrentWeapon->bIsTwoHanded)SetPlayerStatus(EPlayerStatus::EPS_CombatArmed_2H);
+			if (EquippedWeapon->bIsTwoHanded)SetPlayerStatus(EPlayerStatus::EPS_CombatArmed_2H);
 			else SetPlayerStatus(EPlayerStatus::EPS_CombatArmed_1H);
 		}
 		else
@@ -323,16 +323,17 @@ void AMain::Tick(float DeltaTime)
 		}
 	}
 
+	// If IdleTimer is not active and Player is not crouched
 	if (!GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle) && !bCrouched)
 	{
+		// If an Idle Animation is not already playing AND the Player is not moving
 		if (IdleAnimSlot == 0
 			&& (Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance())->MovementSpeed == 0))
 		{
+			// Start the Timer and set it for IdleTimeLimit seconds.
 			GetWorldTimerManager().SetTimer(IdleAnimTimerHandle, TimerDel, IdleTimeLimit, false);
 		}
 	}
-
-	//UE_LOG(LogTemp, Warning, TEXT("Main NumberOfSlots = %i"), Inventory->NumberOfSlots);
 }
 
 //  Called to bind functionality to input
@@ -382,10 +383,11 @@ bool AMain::bCanMove(float Value)
 	if (MainPlayerController)
 	{
 		return (
-			(Value != 0.0f)
-			&& (!bAttacking)
-			&& (MovementStatus != EMovementStatus::EMS_Dead)
-			&& (!MainPlayerController->bPauseMenuVisible)
+			(Value != 0.0f)		// If Value to move is 0
+			&& (!bAttacking)	// If Attacking
+			&& (MovementStatus != EMovementStatus::EMS_Dead)	// If not Dead
+			&& (!MainPlayerController->bPauseMenuVisible)		// If Pause Menu Visible
+			&& (!MainPlayerController->bInventoryMenuVisible)	// If Inventory Menu Visible
 		);
 	}
 	return false;
@@ -409,6 +411,8 @@ void AMain::MoveForward(float Value)
 
 	if (bCanMove(Value))
 	{
+		ResetIdleTimer();
+
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
@@ -416,8 +420,6 @@ void AMain::MoveForward(float Value)
 		AddMovementInput(Direction, Value);
 
 		bMovingForward = true;
-
-		ResetIdleTimer();
 	}
 }
 
@@ -428,6 +430,8 @@ void AMain::MoveRight(float Value)
 
 	if (bCanMove(Value))
 	{
+		ResetIdleTimer();
+
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
 
@@ -435,8 +439,6 @@ void AMain::MoveRight(float Value)
 		AddMovementInput(Direction, Value);
 
 		bMovingRight = true;
-
-		ResetIdleTimer();
 	}
 }
 
@@ -476,6 +478,8 @@ void AMain::LMBDown()
 {
 	bLMBDown = true;
 
+	ResetIdleTimer();
+
 	if (MovementStatus == EMovementStatus::EMS_Dead)return;
 
 	if (MainPlayerController)
@@ -491,7 +495,7 @@ void AMain::LMBDown()
 	//	AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
 	//	if (Weapon)
 	//	{
-	//		if (CurrentWeapon)
+	//		if (EquippedWeapon)
 	//		{
 	//			if (bIsWeaponDrawn)
 	//			{
@@ -566,9 +570,9 @@ void AMain::RMBDown()
 		ResetIdleTimer();
 
 		// Blocking with a Weapon should only be allowed if the weapon is Two-Handed.
-		if (CurrentWeapon && !EquippedShield)
+		if (EquippedWeapon && !EquippedShield)
 		{
-			if (CurrentWeapon->bIsTwoHanded)
+			if (EquippedWeapon->bIsTwoHanded)
 			{
 				UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
 				if (MainAnimInstance)
@@ -675,14 +679,14 @@ void AMain::SheatheWeapon()
 	bAttacking = false;
 
 
-	if (bIsWeaponDrawn && CurrentWeapon)
+	if (bIsWeaponDrawn && EquippedWeapon)
 	{
 		bIsWeaponDrawn = false;
 
 		// Play the Sheath sound
-		if (CurrentWeapon->OnSheathSound)
+		if (EquippedWeapon->OnSheathSound)
 		{
-			UGameplayStatics::PlaySound2D(this, CurrentWeapon->OnSheathSound);
+			UGameplayStatics::PlaySound2D(this, EquippedWeapon->OnSheathSound);
 		}
 
 		// Play the Sheath Animation
@@ -692,7 +696,7 @@ void AMain::SheatheWeapon()
 		{
 			AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 
-			if (CurrentWeapon->bIsTwoHanded)
+			if (EquippedWeapon->bIsTwoHanded)
 				AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_TwoHanded"), UpperBodyMontage);
 
 			else AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_OneHanded"), UpperBodyMontage);
@@ -702,17 +706,17 @@ void AMain::SheatheWeapon()
 
 void AMain::TimedSheathe()
 {
-	if (CurrentWeapon)
+	if (EquippedWeapon)
 	{
-		CurrentWeapon->DeactivateCollision();
+		EquippedWeapon->DeactivateCollision();
 
-		CurrentWeapon->SetInstigator(nullptr);
+		EquippedWeapon->SetInstigator(nullptr);
 
-		const USkeletalMeshSocket* SheathSocket = GetMesh()->GetSocketByName(CurrentWeapon->SheathSocketName);
+		const USkeletalMeshSocket* SheathSocket = GetMesh()->GetSocketByName(EquippedWeapon->SheathSocketName);
 
 		if (SheathSocket)
 		{
-			SheathSocket->AttachActor(CurrentWeapon, GetMesh());
+			SheathSocket->AttachActor(EquippedWeapon, GetMesh());
 		}
 	}
 }
@@ -721,14 +725,14 @@ void AMain::DrawWeapon()
 {
 	bInCombatMode = true;
 
-	if (!bIsWeaponDrawn && CurrentWeapon)
+	if (!bIsWeaponDrawn && EquippedWeapon)
 	{
 		bIsWeaponDrawn = true;
 
 		// Play the Draw sound
-		if (CurrentWeapon->OnEquipSound)
+		if (EquippedWeapon->OnEquipSound)
 		{
-			UGameplayStatics::PlaySound2D(this, CurrentWeapon->OnEquipSound);
+			UGameplayStatics::PlaySound2D(this, EquippedWeapon->OnEquipSound);
 		}
 
 		// Play the Draw Animation
@@ -738,7 +742,7 @@ void AMain::DrawWeapon()
 		{
 			AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 
-			if (CurrentWeapon->bIsTwoHanded)
+			if (EquippedWeapon->bIsTwoHanded)
 				AnimInstance->Montage_JumpToSection(FName("DrawWeapon_TwoHanded"), UpperBodyMontage);
 			else AnimInstance->Montage_JumpToSection(FName("DrawWeapon_OneHanded"), UpperBodyMontage);
 		}
@@ -747,15 +751,15 @@ void AMain::DrawWeapon()
 
 void AMain::TimedDraw()
 {
-	if (CurrentWeapon)
+	if (EquippedWeapon)
 	{
-		CurrentWeapon->SetInstigator(nullptr);
+		EquippedWeapon->SetInstigator(nullptr);
 
-		const USkeletalMeshSocket* RightHandSocket = GetMesh()->GetSocketByName(CurrentWeapon->HandSocketName);
+		const USkeletalMeshSocket* RightHandSocket = GetMesh()->GetSocketByName(EquippedWeapon->HandSocketName);
 
 		if (RightHandSocket)
 		{
-			RightHandSocket->AttachActor(CurrentWeapon, GetMesh());
+			RightHandSocket->AttachActor(EquippedWeapon, GetMesh());
 		}
 	}
 }
@@ -777,7 +781,7 @@ void AMain::CtrlDown()
 
 		PlayerUnCrouch();
 
-		GetCapsuleComponent()->SetCapsuleRadius(36.0);
+		// GetCapsuleComponent()->SetCapsuleRadius(36.0);
 	}
 	else
 	{
@@ -785,7 +789,7 @@ void AMain::CtrlDown()
 
 		PlayerCrouch();
 
-		GetCapsuleComponent()->SetCapsuleRadius(60.0);
+		// GetCapsuleComponent()->SetCapsuleRadius(60.0);
 	}
 }
 
@@ -803,7 +807,7 @@ void AMain::TabDown()
 		// If a UI Widget (Other than the HUD) is not currently active, display the Inventory menu.
 		if (!MainPlayerController->bPauseMenuVisible)
 		{
-			MainPlayerController->ToggleInventoryMenu(Inventory);
+			MainPlayerController->ToggleInventoryMenu(InventoryComponent);
 		}
 	}
 }
@@ -816,6 +820,8 @@ void AMain::EKeyUp()
 void AMain::EKeyDown()
 {
 	bEKeyDown = true;
+
+	ResetIdleTimer();
 
 	TArray<AActor*> OverlappingActors;
 
@@ -852,23 +858,24 @@ void AMain::PlayMeleeAttack(int32 Section)
 
 	if (AnimInstance && CombatMontage)
 	{
-		if (CurrentWeapon)CurrentWeapon->MainAttackSection = Section;
+		// Used for Enemy Hit Reaction
+		if (EquippedWeapon)EquippedWeapon->MainAttackSection = Section;
 
 
 		FString AttackName;
 
 		// Append Section number
 
-		// If Weapon attack
+		// If attack is using a weapon
 		if (bIsWeaponDrawn)
 		{
-			if (CurrentWeapon->bIsTwoHanded)AttackName.Append("TwoHandedAttack_");
+			if (EquippedWeapon->bIsTwoHanded)AttackName.Append("TwoHandedAttack_");
 			else AttackName.Append("OneHandedAttack_");
 
 			if (!bCrouched)
 			{
 				// Get a random Final Combo Attack (Ranges from Attack_3 to Attack_5)
-				if (Section == 3)Section += FMath::RandRange(0, 2);
+				if (Section == 3)Section += FMath::RandRange(0, NumberOfMeleeComboAttacks - 1);
 			}
 			else
 			{	// Only one Section for crouched attacks
@@ -876,26 +883,20 @@ void AMain::PlayMeleeAttack(int32 Section)
 				AttackName.Append("Crouched_");
 			}
 		}
+
 			// else if melee attack
 		else
 		{
-			// If Player has a Shield equipped, play the even-numbered attacks only.
+			// If Player has a Shield equipped, play the even-numbered attacks(right-handed attacks) only.
 			if (PlayerStatus == EPlayerStatus::EPS_ShieldUnarmed)
 			{
-				// Override Section
+				// Override Section  todo Find a better way to find the even AttackSection
 				Section = FMath::RandRange(2, 4);
 				if (Section % 2)Section -= 1;	// Set Section to play the 2nd Animation if RandRange returns 3.
 			}
 
 			AttackName.Append("MeleeAttack_");
 		}
-
-
-		/*	if (GetCharacterMovement()->IsCrouching())
-			{
-				AttackName.Append("Crouched_");
-				Section = 1;
-			}*/
 
 		AttackName.AppendInt(Section);
 
@@ -904,27 +905,6 @@ void AMain::PlayMeleeAttack(int32 Section)
 		// Play Montage
 		AnimInstance->Montage_Play(CombatMontage, 1.0f);
 		AnimInstance->Montage_JumpToSection(*AttackName, CombatMontage);
-
-		/*	switch (Section) {
-	
-			case 0:
-				AnimInstance->Montage_Play(CombatMontage, 2.20f);
-				AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
-				break;
-	
-			case 1:
-				AnimInstance->Montage_Play(CombatMontage, 1.80f);
-				AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
-				break;
-	
-			case 2:
-				AnimInstance->Montage_Play(CombatMontage, 1.80f);
-				AnimInstance->Montage_JumpToSection(FName("Attack_3"), CombatMontage);
-				break;
-	
-			default:
-				break;
-			} */
 	}
 }
 
@@ -943,7 +923,11 @@ void AMain::MeleeAttack()
 
 		SetInterpToEnemy(true);
 
-		PlayMeleeAttack((AttackComboSection++) % 3);
+		/** AttackSection
+		 *  == 0 OR 1 -> Normal Attack
+		 *  == 2 -> Combo Attack
+		*/
+		PlayMeleeAttack((AttackComboSection++) % NumberOfMeleeAttacks);
 	}
 }
 
@@ -959,6 +943,7 @@ void AMain::MeleeAttackEnd()
 	// Reset Combo Attack Section if Player does not press LMB within AttackComboSectionResetTime.
 	GetWorldTimerManager().SetTimer(AttackTimerHandle, this, &AMain::ResetMeleeAttackComboSection,
 	                                AttackComboSectionResetTime);
+
 	// If Player is still holding LMBDown, attack again.
 	if (bLMBDown)
 	{
@@ -1035,6 +1020,8 @@ void AMain::Impact(int32 Section)
 
 	if (AnimInstance && UpperBodyMontage)
 	{
+		ResetIdleTimer();
+
 		FString HitName("Hit_");
 
 		HitName.AppendInt(Section);
@@ -1052,6 +1039,8 @@ void AMain::BlockImpact(int32 Section)
 
 	if (AnimInstance && UpperBodyMontage)
 	{
+		ResetIdleTimer();
+
 		FString ImpactName("Impact_");
 
 		ImpactName.AppendInt(Section);
@@ -1125,14 +1114,14 @@ void AMain::SetMovementStatus(EMovementStatus Status)
 	}
 }
 
-void AMain::SetCurrentWeapon(AWeapon* WeaponToSet)
+void AMain::SetEquippedWeapon(AWeapon* WeaponToSet)
 {
-	if (CurrentWeapon)
+	if (EquippedWeapon)
 	{
-		CurrentWeapon->Destroy();
+		EquippedWeapon->Destroy();
 	}
 
-	CurrentWeapon = WeaponToSet;
+	EquippedWeapon = WeaponToSet;
 }
 
 
@@ -1159,11 +1148,11 @@ void AMain::ShiftKeyUp()
 void AMain::PlaySwingSound()
 {
 	// Each weapon has specefic Swing Sounds depending on the current Attack number.
-	if (SwingSoundIndex < CurrentWeapon->SwingSounds.Num())
+	if (SwingSoundIndex < EquippedWeapon->SwingSounds.Num())
 	{
-		if (CurrentWeapon->SwingSounds[SwingSoundIndex])
+		if (EquippedWeapon->SwingSounds[SwingSoundIndex])
 		{
-			UGameplayStatics::PlaySound2D(this, CurrentWeapon->SwingSounds[SwingSoundIndex]);
+			UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSounds[SwingSoundIndex]);
 			++SwingSoundIndex;
 		}
 	}
@@ -1280,18 +1269,36 @@ void AMain::SwitchLevel(FName LevelName)
 
 void AMain::SaveGame()
 {
+	// Create an Instance of GameSave
 	UGameSave* SaveGameInstance = Cast<UGameSave>(
 		UGameplayStatics::CreateSaveGameObject(UGameSave::StaticClass()));
 
+	// Save the Character's Stats
 	SaveGameInstance->CharacterStats.Health = Health;
 	SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
 	SaveGameInstance->CharacterStats.Stamina = Stamina;
 	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
+	SaveGameInstance->CharacterStats.bInCombatMode = bInCombatMode;
 	SaveGameInstance->CharacterStats.Coins = Coins;
 
-	if (CurrentWeapon)
+	// Save the Character's Inventory.
+	SaveGameInstance->Inventory.SetNum(InventoryComponent->NumberOfSlots);
+
+	for (FSlotStructure Element : InventoryComponent->Inventory)
 	{
-		SaveGameInstance->CharacterStats.WeaponName = CurrentWeapon->Name;
+		SaveGameInstance->Inventory.Add(Element);
+	}
+
+	// Save the name of the EquippedWeapon, if equipped.
+	if (EquippedWeapon)
+	{
+		SaveGameInstance->CharacterStats.EquippedWeaponName = EquippedWeapon->ItemStructure.ItemDisplayName;
+	}
+
+	// Save the name of the EquippedShield, if equipped.
+	if (EquippedShield)
+	{
+		SaveGameInstance->CharacterStats.EquippedShieldName = EquippedShield->ItemStructure.ItemDisplayName;
 	}
 
 	FString MapName = GetWorld()->GetMapName();
@@ -1311,6 +1318,7 @@ void AMain::SaveGame()
 
 void AMain::LoadGame(bool SetPosition)
 {
+	// Create an instance of GameSave
 	UGameSave* LoadGameInstance = Cast<UGameSave>(
 		UGameplayStatics::CreateSaveGameObject(UGameSave::StaticClass()));
 
@@ -1323,24 +1331,77 @@ void AMain::LoadGame(bool SetPosition)
 		MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
 		Stamina = LoadGameInstance->CharacterStats.Stamina;
 		MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+		bInCombatMode = LoadGameInstance->CharacterStats.bInCombatMode;
 		Coins = LoadGameInstance->CharacterStats.Coins;
 
-		if (WeaponStorage)
+
+		/** Load Inventory */
+
+		// Empty the Inventory
+		InventoryComponent->Inventory.Empty();
+		InventoryComponent->PrepareInventory();
+
+		// Set size of the Inventory
+		//InventoryComponent->NumberOfSlots = LoadGameInstance->InventoryComponent->NumberOfSlots;
+		//InventoryComponent->PrepareInventory();
+
+		// Add the Items from the Saved Inventory to the Character's Inventory IF not empty
+		if (LoadGameInstance->Inventory.Num() > 0)
 		{
-			// Create an Instance of WeaponStorage
-			AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
-
-			if (Weapons)
+			for (FSlotStructure Element : LoadGameInstance->Inventory)
 			{
-				FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
+				InventoryComponent->AddToInventory(Element);
+			}
+		}
 
-				if (WeaponName != TEXT(""))
+		// Load the Equipped Weapon if equipped
+		if (LoadGameInstance->CharacterStats.EquippedWeaponName != TEXT(""))
+		{
+			for (FSlotStructure Element : InventoryComponent->Inventory)
+			{
+				// Check if any Item's name matches with the EquippedWeapon's name
+				if (Element.ItemStructure.ItemDisplayName == LoadGameInstance->CharacterStats.EquippedWeaponName)
 				{
-					AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
-					WeaponToEquip->Equip(this);
+					// Spawn and Equip the Weapon.
+					AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Element.ItemStructure.ItemClass);
+					WeaponToEquip->UseItem(this);
+					break;
 				}
 			}
 		}
+
+		// else if no Weapon existed, destroy the Equipped Weapon, if any
+		else
+		{
+			if(EquippedWeapon)
+			{
+				EquippedWeapon->Destroy();
+				SetEquippedWeapon(nullptr);
+			}
+		}
+
+		// Load the Equipped Shield if equipped
+		if (LoadGameInstance->CharacterStats.EquippedShieldName != TEXT(""))
+		{
+			for (FSlotStructure Element : InventoryComponent->Inventory)
+			{
+				// Check if any Item's name matches with the EquippedShield's name
+				if (Element.ItemStructure.ItemDisplayName == LoadGameInstance->CharacterStats.EquippedShieldName)
+				{
+					// Spawn and Equip the Shield.
+					AShield* ShieldToEquip = GetWorld()->SpawnActor<AShield>(Element.ItemStructure.ItemClass);
+					ShieldToEquip->UseItem(this);
+					break;
+				}
+			}
+		}
+		/*	const FString WeaponName = LoadGameInstance->CharacterStats.EquippedWeaponName;
+			
+			if(WeaponName != TEXT(""))
+			{
+				AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
+				AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>();
+			}*/
 
 		if (SetPosition)
 		{
@@ -1352,7 +1413,7 @@ void AMain::LoadGame(bool SetPosition)
 		GetMesh()->bPauseAnims = false;
 		GetMesh()->bNoSkeletonUpdate = false;
 
-
+		// Get the name of the current map/level
 		FString MapName = GetWorld()->GetMapName();
 		MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
 
@@ -1377,25 +1438,71 @@ void AMain::LoadGameNoSwitch()
 	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
 	Stamina = LoadGameInstance->CharacterStats.Stamina;
 	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+	bInCombatMode = LoadGameInstance->CharacterStats.bInCombatMode;
 	Coins = LoadGameInstance->CharacterStats.Coins;
 
-	if (WeaponStorage)
-	{
-		// Create an Instance of WeaponStorage
-		AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
+	/** Load Inventory */
 
-		if (Weapons)
+	// Empty the Inventory
+	InventoryComponent->Inventory.Empty();
+	InventoryComponent->PrepareInventory();
+
+	// Set size of the Inventory
+	//InventoryComponent->NumberOfSlots = LoadGameInstance->InventoryComponent->NumberOfSlots;
+	//InventoryComponent->PrepareInventory();
+
+	// Add the Items from the Saved Inventory to the Character's Inventory IF not empty
+		if (LoadGameInstance->Inventory.Num() > 0)
 		{
-			FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
-
-			if (WeaponName != TEXT(""))
+			for (FSlotStructure Element : LoadGameInstance->Inventory)
 			{
-				AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
-				WeaponToEquip->Equip(this);
+				InventoryComponent->AddToInventory(Element);
 			}
 		}
-	}
 
+		// Load the Equipped Weapon if equipped
+		if (LoadGameInstance->CharacterStats.EquippedWeaponName != TEXT(""))
+		{
+			for (FSlotStructure Element : InventoryComponent->Inventory)
+			{
+				// Check if any Item's name matches with the EquippedWeapon's name
+				if (Element.ItemStructure.ItemDisplayName == LoadGameInstance->CharacterStats.EquippedWeaponName)
+				{
+					// Spawn and Equip the Weapon.
+					AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Element.ItemStructure.ItemClass);
+					WeaponToEquip->UseItem(this);
+					break;
+				}
+			}
+		}
+
+		// Load the Equipped Shield if equipped
+		if (LoadGameInstance->CharacterStats.EquippedShieldName != TEXT(""))
+		{
+			for (FSlotStructure Element : InventoryComponent->Inventory)
+			{
+				// Check if any Item's name matches with the EquippedShield's name
+				if (Element.ItemStructure.ItemDisplayName == LoadGameInstance->CharacterStats.EquippedShieldName)
+				{
+					// Spawn and Equip the Shield.
+					AShield* ShieldToEquip = GetWorld()->SpawnActor<AShield>(Element.ItemStructure.ItemClass);
+					ShieldToEquip->UseItem(this);
+					break;
+				}
+			}
+		}
+
+		// Get the name of the current map/level
+		FString MapName = GetWorld()->GetMapName();
+		MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+		
+		// If map name is not empty AND it is the current map, set the position	of the Character.
+		if ((LoadGameInstance->CharacterStats.LevelName != "")
+			&& (LoadGameInstance->CharacterStats.LevelName == MapName))
+		{
+			SetActorLocation(LoadGameInstance->CharacterStats.Location);
+			SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
+		}
 
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 	GetMesh()->bPauseAnims = false;
@@ -1410,18 +1517,20 @@ bool AMain::CanCheckStaminaStatus()
 }
 
 /**
- *Every time after an Idle Animation plays, the base Idle Animation should be played.
+ * Every time after an Idle Animation plays, the base Idle Animation should be played.
  * After the base Idle Animation is complete, one of the other Idle Animations will be randomly chosen.
  */
 void AMain::IdleEnd(int32 PlayerStatusNo)
 {
+	// If Character was in Original Idle state, play an Idle Animation.
 	if (IdleAnimSlot == 0)
-	{
+	{                               // [0 -> NumberOfIdleAnims - 1]
 		IdleAnimSlot = FMath::RandRange(1, NumberOfIdleAnims[PlayerStatusNo] - 1);
 	}
+
+		// else return back to the Original Idle state.
 	else IdleAnimSlot = 0;
 }
-
 
 /**
 	*First two Attack Sections are 1&2. Hence Ceiling of any of these divided by 2 = 1. HitSocketNames[1] gives "BodyFrontHitSocket".

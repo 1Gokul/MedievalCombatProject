@@ -195,14 +195,14 @@ bool UInventoryComponent::InventoryQuery(TSubclassOf<AItem> QueryItem, int32 Que
 
 bool UInventoryComponent::ShouldUnequipWeaponOrShield(TSubclassOf<AItem> ItemToCheck, AMain* Main)
 {
-	if (Main->CurrentWeapon)
+	if (Main->EquippedWeapon)
 	{
-		if (ItemToCheck == Main->CurrentWeapon->GetClass())
+		if (ItemToCheck == Main->EquippedWeapon->GetClass())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Same as weapon!!"));
 
-			AWeapon* Temp = Main->CurrentWeapon;
-			Main->SetCurrentWeapon(nullptr);
+			AWeapon* Temp = Main->EquippedWeapon;
+			Main->SetEquippedWeapon(nullptr);
 
 			Temp->Destroy();
 
@@ -227,7 +227,6 @@ bool UInventoryComponent::ShouldUnequipWeaponOrShield(TSubclassOf<AItem> ItemToC
 			return true;
 		}
 	}
-
-		return false;
-	
+		return false; 	
 }
+

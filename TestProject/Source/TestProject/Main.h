@@ -61,11 +61,11 @@ public:
 
 	/** Player Inventory */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = "true"))
-	class UInventoryComponent* Inventory;
+	class UInventoryComponent* InventoryComponent;
 
 	/** The Weapon that the Character is currently using */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
-	class AWeapon* CurrentWeapon;
+	class AWeapon* EquippedWeapon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
 	bool bIsWeaponDrawn;
@@ -174,6 +174,9 @@ public:
 
 	/** Sections of the Combat Montage that will play when the Player attacks. */
 	int32 AttackComboSection;
+
+	const int32 NumberOfMeleeAttacks = 3;
+	const int32 NumberOfMeleeComboAttacks = 3;
 
 	/** The SwingSounds TArray Index that will increase as the number of swings increases.
 	 * This will help emit different sounds for each swing of the Combo Attacks.
@@ -363,6 +366,8 @@ public:
 	*/
 	void SetInterpToEnemy(bool Interp);
 
+	//int32 GetRightHandAttackSection();
+	
 	void PlayMeleeAttack(int32 Section);
 
 	UFUNCTION()
@@ -399,7 +404,7 @@ public:
 
 	FORCEINLINE void SetPlayerStatus(EPlayerStatus State) { PlayerStatus = State; }
 
-	void SetCurrentWeapon(AWeapon* WeaponToSet);
+	void SetEquippedWeapon(AWeapon* WeaponToSet);
 
 	void SetEquippedShield(AShield* ShieldToSet);
 

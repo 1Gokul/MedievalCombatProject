@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
+#include "Items/Item.h"
+#include "InventoryComponent.h"
 #include "GameSave.generated.h"
 
 
@@ -26,6 +28,9 @@ struct FCharacterStats
 	float MaxStamina;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+	bool bInCombatMode;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
 	int32 Coins;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
@@ -35,7 +40,10 @@ struct FCharacterStats
 	FRotator Rotation;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
-	FString WeaponName;
+	FName EquippedWeaponName;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+	FName EquippedShieldName;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
 	FString LevelName;
@@ -62,4 +70,7 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = Basic)
 	FCharacterStats CharacterStats;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Basic)
+	TArray<FSlotStructure> Inventory;	
 };

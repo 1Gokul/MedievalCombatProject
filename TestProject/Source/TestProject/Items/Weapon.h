@@ -77,8 +77,8 @@ public:
 	int32 MainAttackSection;
 
 	/**If true, the Player will treat the weapon as two handed.
-	 * No Shield can be equipped if the CurrentWeapon is Two-Handed.
-	 * Weapon Blocking is possible only when the CurrentWeapon is Two-Handed.
+	 * No Shield can be equipped if the EquippedWeapon is Two-Handed.
+	 * Weapon Blocking is possible only when the EquippedWeapon is Two-Handed.
 	 * Animations and Blendspaces will be changed also.
 	 * Will be set in the Weapon's Blueprint.
 	 */
