@@ -72,6 +72,28 @@ public:
 
 	void TogglePauseMenu();
 
+	/** Item Pickup prompt */
+	bool bItemInteractPromptVisible;
+
+	// Display the pickup prompt widget
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void DisplayItemInteractPrompt(const FString& ItemName, float Weight, int32 Value, FName InteractText);
+
+	// Remove the pickup prompt widget
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void RemoveItemInteractPrompt();
+
+	/** Search prompt */
+	bool bSearchPromptVisible;
+
+	// Display the pickup prompt widget
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void DisplaySearchPrompt(const FString& ItemName, FName SearchText);
+
+	// Remove the pickup prompt widget
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void RemoveSearchPrompt();
+
 	/** Inventory Menu*/
 
 	bool bInventoryMenuVisible;
@@ -84,4 +106,5 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
 	void RemoveInventoryMenu();
+
 };

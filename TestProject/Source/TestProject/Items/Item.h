@@ -52,6 +52,10 @@ struct FItemStructure
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
 	bool bIsEquippable;
 
+	/** If the Item is equippable or not*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
+	int32 Value;
+
 	/** Item class reference */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item | Info")
 	TSubclassOf<class AItem> ItemClass;

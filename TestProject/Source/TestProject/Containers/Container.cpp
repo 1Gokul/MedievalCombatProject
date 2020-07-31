@@ -23,7 +23,7 @@ AContainer::AContainer()
 
 	// Setup Inventory
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
-	InventoryComponent->InventoryName = FText::FromString("Container");
+	InventoryComponent->InventoryName = FString("Container");
 
 	InventoryComponent->NumberOfSlots = 8;
 }
@@ -32,6 +32,9 @@ AContainer::AContainer()
 void AContainer::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AContainer::OnOverlapBegin);
+	CollisionBox->OnComponentEndOverlap.AddDynamic(this, &AContainer::OnOverlapEnd);
 
 	// Add all elements of Items into the InventoryComponent
 	for (int i = 0; i < Items.Num(); i++)
@@ -58,4 +61,39 @@ void AContainer::Interact(AActor* Interacter)
 
 	// Display this Container's Inventory
 	Main->MainPlayerController->ToggleInventoryMenu(InventoryComponent);
+}
+
+void AContainer::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// Check if the OtherActor is the Character
+	AMain* Main = Cast<AMain>(OtherActor);
+
+	if(Main)
+	{
+		// If it is, display the Search Prompt.
+		if(Main->MainPlayerController)
+		{
+			FString ItemName = InventoryComponent->InventoryName;
+			FName SearchText("Search");
+			
+			Main->MainPlayerController->DisplaySearchPrompt(ItemName, SearchText);
+		}
+	}
+}
+
+void AContainer::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                              UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{  	
+	// Check if the OtherActor is the Character
+	AMain* Main = Cast<AMain>(OtherActor);
+
+	if(Main)
+	{
+		// If it is, display the Search Prompt.
+		if(Main->MainPlayerController)
+		{			
+			Main->MainPlayerController->RemoveSearchPrompt();
+		}
+	}
 }

@@ -18,7 +18,7 @@ FSlotStructure::FSlotStructure()
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
 {
-	InventoryName = FText::FromString("Inventory");
+	InventoryName = FString("Inventory");
 }
 
 // Called when the game starts

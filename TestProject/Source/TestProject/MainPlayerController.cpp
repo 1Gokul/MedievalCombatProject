@@ -14,6 +14,7 @@ void AMainPlayerController::BeginPlay()
 
 	bPauseMenuVisible = false;
 	bInventoryMenuVisible = false;
+	bItemInteractPromptVisible = false;
 
 	if (HUDOverlayAsset)
 	{
@@ -120,6 +121,26 @@ void AMainPlayerController::TogglePauseMenu()
 	{
 		DisplayPauseMenu();
 	}
+}
+
+void AMainPlayerController::DisplayItemInteractPrompt_Implementation(const FString& ItemName, float Weight, int32 Value, FName InteractText)
+{
+	bItemInteractPromptVisible = true;
+}
+
+void AMainPlayerController::RemoveItemInteractPrompt_Implementation()
+{
+	bItemInteractPromptVisible = false;
+}
+
+void AMainPlayerController::DisplaySearchPrompt_Implementation(const FString& ItemName, FName SearchText)
+{
+	bSearchPromptVisible = true;
+}
+
+void AMainPlayerController::RemoveSearchPrompt_Implementation()
+{
+	bSearchPromptVisible = false;
 }
 
 void AMainPlayerController::ToggleInventoryMenu(UInventoryComponent* InventoryComponent)

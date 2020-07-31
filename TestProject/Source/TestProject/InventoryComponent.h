@@ -52,7 +52,7 @@ public:
 	UInventoryComponent();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Inventory")
-	FText InventoryName;
+	FString InventoryName;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Inventory")
 	int32 NumberOfSlots = 21;

@@ -7,6 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "InventoryComponent.h"
+#include "MainPlayerController.h"
 
 
 FItemStructure::FItemStructure(): Thumbnail(nullptr)
@@ -25,6 +26,7 @@ FItemStructure::FItemStructure(): Thumbnail(nullptr)
 	bIsEquippable = false;
 
 	Weight = 1.0f;
+	Value = 1;
 }
 
 
@@ -73,11 +75,34 @@ void AItem::Tick(float DeltaTime)
 void AItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
                            int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// Check if the OtherActor is the Character
+	AMain* Main = Cast<AMain>(OtherActor);
+
+	if(Main)
+	{
+		// If it is, display the Item Interact Prompt.
+		if(Main->MainPlayerController)
+		{
+			FName ItemInteractText = FName("Take");
+			Main->MainPlayerController->DisplayItemInteractPrompt(ItemStructure.ItemDisplayName.ToString(), ItemStructure.Weight, ItemStructure.Value, ItemInteractText);
+		}
+	}
 }
 
 void AItem::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
                          int32 OtherBodyIndex)
 {
+	// Check if the OtherActor is the Character
+	AMain* Main = Cast<AMain>(OtherActor);
+
+	if(Main)
+	{
+		// If it is, display the Item Interact Prompt.
+		if(Main->MainPlayerController)
+		{			
+			Main->MainPlayerController->RemoveItemInteractPrompt();
+		}
+	}
 }
 
 void AItem::Interact(AActor* Interacter)
