@@ -15,17 +15,20 @@ void AMainPlayerController::BeginPlay()
 	bPauseMenuVisible = false;
 	bInventoryMenuVisible = false;
 	bItemInteractPromptVisible = false;
+	bHUDVisible = true;
 
+	// Create the HUD Widget and let it be hidden (It gets displayed once the map loads)
 	if (HUDOverlayAsset)
 	{
 		HUDOverlay = CreateWidget<UUserWidget>(this, HUDOverlayAsset);
+
+		if (HUDOverlay)
+		{
+			HUDOverlay->AddToViewport();
+			HUDOverlay->SetVisibility(ESlateVisibility::Hidden);
+		}
 	}
-
-	// TODO: Change to be visible only when the level starts because it will have to be hidden when a Main Menu is added.
-	HUDOverlay->AddToViewport();
-	HUDOverlay->SetVisibility(ESlateVisibility::Visible);
-	bHUDVisible = true;
-
+	
 	if (WEnemyHealthBar)
 	{
 		EnemyHealthBar = CreateWidget<UUserWidget>(this, WEnemyHealthBar);
@@ -90,6 +93,17 @@ void AMainPlayerController::GameAndUIMode()
 bool AMainPlayerController::bUIWidgetCurrentlyActive()
 {
 	return (bInventoryMenuVisible || bPauseMenuVisible);
+}
+
+void AMainPlayerController::DisplayHUD_Implementation()
+{
+	bHUDVisible = true;
+}
+
+
+void AMainPlayerController::HideHUD_Implementation()
+{
+	bHUDVisible = false;
 }
 
 

@@ -83,7 +83,7 @@ void AItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 		// If it is, display the Item Interact Prompt.
 		if(Main->MainPlayerController)
 		{
-			FName ItemInteractText = FName("Take");
+			// ItemInteract text has been defined as "Take". 
 			Main->MainPlayerController->DisplayItemInteractPrompt(ItemStructure.ItemDisplayName.ToString(), ItemStructure.Weight, ItemStructure.Value, ItemInteractText);
 		}
 	}

@@ -41,6 +41,18 @@ enum class EStaminaStatus : uint8
 	ESS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
+/** The types of Physical surfaces in the game. */
+UENUM(BlueprintType)
+enum class EPhysicalMaterials : uint8
+{
+	EPM_Land UMETA(DisplayName = "Land"),
+	EPM_Stone UMETA(DisplayName = "Stone"),
+	EPM_Wood UMETA(DisplayName = "Wood"),
+	EPM_Water UMETA(DisplayName = "Water"),
+
+	EPM_MAX UMETA(DisplayName = "MAX")
+};
+
 UCLASS()
 class TESTPROJECT_API AMain : public ACharacter
 {
@@ -257,7 +269,7 @@ public:
 	FVector OverlappingWeaponLocation;
 
 	/** Time limit if reached, will make the timer handle call IdleEnd().*/
-	const float IdleTimeLimit = 10.0f;
+	const float IdleTimeLimit = 20.0f;
 
 	/** Used to choose a random idle animation of the player(by calling IdleEnd()),
 	 *	if the Player has not moved in IdleTimeLimit time. */
@@ -270,6 +282,19 @@ public:
 
 	TArray<int32> NumberOfIdleAnims;
 
+	// A random number between [0 -> NumberOfFootstepSounds] will decide which footstep sound should be used.
+	const int32 NumberOfFootstepSounds = 5;
+	// TArray<int32> NumberOfFootstepSounds;
+
+	/** Array of footstep sounds for each type of Physical material. Values are set in Blueprints.
+	 *	Each Physical material has `NumberOfFootstepSounds` sounds.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FootstepSounds")
+	TArray<USoundCue*> RunningFootstepSounds;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "FootstepSounds")
+	TArray<USoundCue*> SprintingFootstepSounds;
+	
 protected:
 	// Called when the game starts or when spawned
 	void BeginPlay() override;
@@ -483,6 +508,14 @@ public:
 
 	void SpawnHitParticles(AEnemy* DamageCauser);
 
-	//UFUNCTION(BlueprintCallable, Category = "Items")
-	//void UseItem(class AItem* Item);
+	/**
+	 * Line-trace from the Character's location to the ground to find out the Physical Material
+	 * of the surface it is on to play a footstep sound.
+	 * 
+	 * Called by an Anim Notify in the Character's Walking or Running animation. 
+	 */
+	UFUNCTION(BlueprintCallable)
+	void Footstep();
+	
+	void PlayFootstepSound(EPhysicalMaterials &PhysicalMaterial, FVector& LocationToPlayAt);
 };

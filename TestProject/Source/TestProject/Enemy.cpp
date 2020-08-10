@@ -39,6 +39,9 @@ AEnemy::AEnemy()
 	RightCombatCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("RightCombatCollision"));
 	RightCombatCollision->SetupAttachment(GetMesh(), FName("RightEnemySocket"));
 
+	RightWeaponStaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RightWeaponStaticMesh"));
+	RightWeaponStaticMesh->SetupAttachment(GetMesh(), FName("EnemyRightHandSocket"));
+
 	bOverlappingCombatSphere = false;
 	bAttacking = false;
 	bHasValidTarget = false;
@@ -484,7 +487,7 @@ void AEnemy::Attack()
 			if (AnimInstance)
 			{
 				//Randomly choose between the 4 attack animations
-				AttackSection = FMath::RandRange(1, 4);
+				AttackSection = FMath::RandRange(1, NumberOfAttackAnimations);
 
 				// Append the AttackSection to the FString below
 				FString AttackName("Attack_");

@@ -83,6 +83,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UBoxComponent* RightCombatCollision;
 
+	/** Optional Weapon Static mesh for the Right Hand of the Enemy.
+	 *  Is not considered during combat as RightCombatCollision takes care of it.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat")
+	class UStaticMeshComponent* RightWeaponStaticMesh;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	class UAnimMontage* CombatMontage;
 
@@ -116,6 +122,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TSubclassOf<UDamageType> DamageTypeClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	int NumberOfAttackAnimations = 1;
 
 
 protected:

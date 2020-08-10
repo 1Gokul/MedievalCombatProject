@@ -74,6 +74,8 @@ public:
 	UPROPERTY(Transient)
 	class UWorld* World;
 
+	const FName ItemInteractText = FName("Take");
+
 	/** Item Stats*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ItemStructure")
 	FItemStructure ItemStructure;

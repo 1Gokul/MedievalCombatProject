@@ -34,10 +34,19 @@ public:
 	TSubclassOf<class UUserWidget> HUDOverlayAsset;
 
 	/** Variable to hold the widget after creating it */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
 	UUserWidget* HUDOverlay;
 
 	bool bHUDVisible;
+
+	// Display the HUD when the Character is active
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void DisplayHUD();
+
+	// Remove the HUD when the Character is idle for more than IdleTimerLimit seconds.
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
+	void HideHUD();
+	
 
 	/** For Enemy health bar */
 

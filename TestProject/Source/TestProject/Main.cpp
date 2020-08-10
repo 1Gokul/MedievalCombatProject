@@ -26,6 +26,7 @@
 #include "Animation/AnimInstance.h"
 #include "Sound/SoundCue.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 
 
 //  Sets default values
@@ -159,6 +160,9 @@ void AMain::BeginPlay()
 	{
 		MainPlayerController->GameModeOnly();
 	}
+
+	// Display the HUD
+	MainPlayerController->DisplayHUD();
 }
 
 void AMain::CheckPlayerStatus()
@@ -395,6 +399,12 @@ bool AMain::bCanMove(float Value)
 
 void AMain::ResetIdleTimer()
 {
+	// If the HUD is not currently visible, display it
+	if(!MainPlayerController->bHUDVisible)
+	{
+		MainPlayerController->DisplayHUD();
+	}
+	
 	// Reset the Idle Anim Slot
 	IdleAnimSlot = 0;
 
@@ -1198,6 +1208,8 @@ void AMain::Jump()
 
 	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking) && (!bAttacking))
 	{
+		ResetIdleTimer();
+		
 		Super::Jump();
 	}
 }
@@ -1522,6 +1534,12 @@ bool AMain::CanCheckStaminaStatus()
  */
 void AMain::IdleEnd(int32 PlayerStatusNo)
 {
+	// If the HUD is currently visible, remove it
+	if(MainPlayerController->bHUDVisible)
+	{
+		MainPlayerController->HideHUD();
+	}
+	
 	// If Character was in Original Idle state, play an Idle Animation.
 	if (IdleAnimSlot == 0)
 	{                               // [0 -> NumberOfIdleAnims - 1]
@@ -1554,6 +1572,112 @@ void AMain::SpawnHitParticles(AEnemy* DamageCauser)
 		FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, SocketLocation,
 		                                         FRotator(0.0f), true);
+	}
+}
+
+void AMain::Footstep()
+{
+	// Line-trace will start from the Character's location to a point 500 units below it.
+	FVector Start = GetActorLocation();
+	FVector End = Start - FVector(0.0f, 0.0f, 500.0f);
+
+	// Hit result
+	FHitResult OutHit;
+
+	
+	FCollisionQueryParams CollisionParams;
+
+	// Ignore the Character during the Line-trace
+	CollisionParams.AddIgnoredActor(this);
+
+	// Make sure the Line-trace returns the Physical Material of the object it hits
+	CollisionParams.bReturnPhysicalMaterial = true;
+	
+	// Line-trace from the Character to the ground
+	bool Success = GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECollisionChannel::ECC_Visibility, CollisionParams);
+
+	// If the line-trace was successful
+	if(Success)
+	{
+		EPhysicalMaterials PhysicalMaterial;
+
+		// Find out the name of the Physical Material that the line-trace hit
+		UObject* PhysMatObject = Cast<UObject>(OutHit.PhysMaterial.Get());
+
+		if(PhysMatObject){
+
+			FName PhysMatObjectName = PhysMatObject->GetFName();
+			
+			// Assign the EPhysicalMaterials enum value accordingly
+			if(PhysMatObjectName == "DefaultPhysicalMaterial"){
+				PhysicalMaterial = EPhysicalMaterials::EPM_Land;
+			}
+
+			else if(PhysMatObjectName == "PhysicalMaterial_Land"){
+				PhysicalMaterial = EPhysicalMaterials::EPM_Land;
+			}
+
+			else if(PhysMatObjectName == "PhysicalMaterial_Stone"){
+				PhysicalMaterial = EPhysicalMaterials::EPM_Stone;
+			}
+
+			else if(PhysMatObjectName == "PhysicalMaterial_Wood"){
+				PhysicalMaterial = EPhysicalMaterials::EPM_Wood;
+			}
+
+			else if(PhysMatObjectName == "PhysicalMaterial_Water"){
+				PhysicalMaterial = EPhysicalMaterials::EPM_Water;
+			}
+
+			else{
+				PhysicalMaterial = EPhysicalMaterials::EPM_Land;
+			} 			
+
+			// Play the sound
+			PlayFootstepSound(PhysicalMaterial, OutHit.ImpactPoint);	
+
+			UE_LOG(LogTemp, Warning, TEXT("Material Name: %s"), *OutHit.PhysMaterial.Get()->GetFName().ToString());
+		}
+	}
+}
+
+void AMain::PlayFootstepSound(EPhysicalMaterials& PhysicalMaterial, FVector& LocationToPlayAt)
+{
+	//USoundCue* SoundToPlay;
+
+	const int32 PhysicalMaterialInt = static_cast<int32>(PhysicalMaterial);
+
+	/**
+	 * Each type of Physical material has indexes as below:
+	 *
+	 *	FYI: The '5' below is NumberOfFootstepSounds.
+	 *
+	 * {Index} - Name - [(5 * Index) -> ((5 * (Index + 1)) - 1)]
+	 * {0} - Land - [0 -> 4]
+	 * {1} - Stone - [5 -> 9]
+	 * {2} - Wood - [10 -> 14]
+	 * {3} - Water - [15 -> 19]
+	 */
+
+	int32 RandIndex = FMath::RandRange(NumberOfFootstepSounds * PhysicalMaterialInt, (NumberOfFootstepSounds * (PhysicalMaterialInt + 1) - 1));
+
+	if (MovementStatus == EMovementStatus::EMS_Normal)
+	{
+		// If the index decided is valid, play the Running footstep sound.
+		if (RunningFootstepSounds.IsValidIndex(RandIndex))
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), RunningFootstepSounds[RandIndex], LocationToPlayAt,
+			                                      FRotator(0.0f, 0.0f, 0.0f));
+		}
+	}
+	else if (MovementStatus == EMovementStatus::EMS_Sprinting)
+	{
+		// If the index decided is valid, play the Sprinting footstep sound.
+		if (SprintingFootstepSounds.IsValidIndex(RandIndex))
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SprintingFootstepSounds[RandIndex], LocationToPlayAt,
+			                                      FRotator(0.0f, 0.0f, 0.0f));
+		}
 	}
 }
 
