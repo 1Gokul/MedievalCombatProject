@@ -11,14 +11,13 @@ class TESTPROJECT_API ALevelTransitionVolume : public AActor
 {
 	GENERATED_BODY()
 
+	class UBillboardComponent* Billboard;
+
 public:
-	// Sets default values for this actor's properties
-	ALevelTransitionVolume();
+
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Transition")
 	class UBoxComponent* TransitionVolume;
-
-	class UBillboardComponent* Billboard;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Transition")
 	FName TransitionLevelName;
@@ -29,6 +28,10 @@ protected:
 	void BeginPlay() override;
 
 public:
+	// Sets default values for this actor's properties
+	ALevelTransitionVolume();
+
+
 	// Called every frame
 	void Tick(float DeltaTime) override;
 

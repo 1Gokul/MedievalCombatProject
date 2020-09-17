@@ -18,6 +18,7 @@
 #include "TimerManager.h"
 #include "Components/CapsuleComponent.h"
 #include "MainPlayerController.h"
+#include "Items/MeleeWeapon.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -145,7 +146,7 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 		{
 			bHasValidTarget = true;
 			Main->SetCombatTarget(this);
-			Main->SetHasCombatTarget(true);
+			Main->SetbHasCombatTarget(true);
 
 			Main->UpdateCombatTarget();
 
@@ -169,11 +170,11 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 		{
 			bHasValidTarget = false;
 
-			if (Main->CombatTarget == this)
+			if (Main->GetCombatTarget() == this)
 			{
 				Main->SetCombatTarget(nullptr);
 			}
-			Main->SetHasCombatTarget(false);
+			Main->SetbHasCombatTarget(false);
 
 			Main->UpdateCombatTarget();
 
@@ -209,20 +210,20 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 			MoveToTarget(Main);
 			CombatTarget = nullptr;
 
-			if (Main->CombatTarget == this)
+			if (Main->GetCombatTarget() == this)
 			{
 				Main->SetCombatTarget(nullptr);
-				Main->bHasCombatTarget = false;
+				Main->SetbHasCombatTarget(false);
 				Main->UpdateCombatTarget();
 			}
 
-			if (Main->MainPlayerController)
+			if (Main->GetMainPlayerController())
 			{
 				USkeletalMeshComponent* CharMesh = Cast<USkeletalMeshComponent>(OtherComp);
 
 				if (CharMesh)
 				{
-					Main->MainPlayerController->RemoveEnemyHealthBar();
+					Main->GetMainPlayerController()->RemoveEnemyHealthBar();
 				}
 			}
 
@@ -273,7 +274,7 @@ void AEnemy::InflictDamageOnMain(AMain* Main, bool bHitFromBehind)
 		AttackSection += 4;
 	}
 
-	// If Character was hit while facing the attacking Enemy
+		// If Character was hit while facing the attacking Enemy
 	else
 	{
 		// Play appropriate Hit Reaction Animation
@@ -281,16 +282,11 @@ void AEnemy::InflictDamageOnMain(AMain* Main, bool bHitFromBehind)
 	}
 
 	// Spawn Blood particles
-	if (Main->HitParticles)
-	{
-		Main->SpawnHitParticles(this);
-	}
+	Main->SpawnHitParticles(this);
+
 
 	// Play Hit Sound
-	if (Main->HitSound)
-	{
-		UGameplayStatics::PlaySound2D(this, Main->HitSound);
-	}
+	Main->PlayHitSound();
 
 	// Apply Damage to Main
 	if (DamageTypeClass)
@@ -299,9 +295,9 @@ void AEnemy::InflictDamageOnMain(AMain* Main, bool bHitFromBehind)
 	}
 
 	//In case the Player's attack was interrupted
-	Main->bAttacking = false;
+	Main->SetbAttacking(false);
 
-	Main->bInterpToEnemy = false;
+	Main->SetbInterpToEnemy(false);
 }
 
 void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -332,68 +328,62 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 			bool bAngleCheck2 = UKismetMathLibrary::InRange_FloatFloat(DeltaRotator.Yaw, 60, 180);
 
 			// If Character is Blocking
-			if (Main->bBlocking)
+			if (Main->GetbBlocking())
 			{
 				//If facing the Enemy
 				if (!(bAngleCheck1 || bAngleCheck2))
 				{
 					//If Character is blocking with shield and has enough stamina to successfully block an attack  
-					if (Main->EquippedShield && Main->Stamina - Main->EquippedShield->BlockStaminaCost >= 0)
+					if (Main->GetEquippedShield() && Main->GetStamina() - Main
+					                                                      ->GetEquippedShield()->GetBlockStaminaCost()
+						>= 0)
 					{
-						Main->Stamina -= Main->EquippedShield->BlockStaminaCost;
+						Main->SetStamina(Main->GetStamina() - Main->GetEquippedShield()->GetBlockStaminaCost());
 
 						int32 Section = FMath::RandRange(1, 3);
 
-						//Character Shield Block Impact Animation
-						Main->BlockImpact(Section);
+						//Play the Character's Shield Block Impact animation.
+						Main->PlayBlockImpactAnimation(Section);
 
-						if (Main->EquippedShield->BlockSound)
-						{
-							UGameplayStatics::PlaySound2D(this, Main->EquippedShield->BlockSound);
-						}
+						// Play the Shield's Block Sound.
+						Main->GetEquippedShield()->PlayBlockSound();
 
-						if (Main->EquippedShield->HitParticles)
-						{
-							FVector SocketLocation = Main->EquippedShield->StaticMesh->GetSocketLocation(
-								Main->EquippedShield->HitSocketName);
-							UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Main->EquippedShield->HitParticles,
-							                                         SocketLocation, FRotator(0.0f), true);
-						}
+						// Emit the Shield's Hit Particles
+						Main->GetEquippedShield()->EmitHitParticles();
 					}
 
 						//If Character is blocking with weapon and has enough stamina to successfully block an attack
-					else if (Main->bIsWeaponDrawn && Main->Stamina - Main->EquippedWeapon->BlockStaminaCost >= 0)
+					else if (Main->GetbIsWeaponDrawn())
 					{
-						//Weapons don't block attacks completely
-						if (DamageTypeClass)
+						// Cast the Weapon to MeleeWeapon as blocking is possible only with them.
+
+						AMeleeWeapon* MeleeWeapon = Cast<AMeleeWeapon>(Main->GetEquippedWeapon());
+
+						if (MeleeWeapon)
 						{
-							UGameplayStatics::ApplyDamage(Main, DamageIfBlocked, AIController, this,
-							                              DamageTypeClass);
-						}
-
-						Main->Stamina -= Main->EquippedWeapon->BlockStaminaCost;
-
-						int32 Section = FMath::RandRange(4, 6);
-
-						//Character Weapon Block Impact Animation
-						Main->BlockImpact(Section);  // +3 because first 3 attack sections are for shield blocking
-
-						if (Main->EquippedWeapon->BlockSound)
-						{
-							UGameplayStatics::PlaySound2D(this, Main->EquippedWeapon->BlockSound);
-						}
-
-						if (Main->EquippedWeapon->HitParticles)
-						{
-							const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(
-								Main->EquippedWeapon->HitSocketName);
-
-							if (TipSocket)
+							if (Main->GetStamina() - MeleeWeapon->BlockStaminaCost >= 0)
 							{
-								FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
-								UGameplayStatics::SpawnEmitterAtLocation(
-									GetWorld(), Main->EquippedWeapon->HitParticles, SocketLocation,
-									FRotator(0.0f), true);
+								// Weapons don't block attacks completely
+								if (DamageTypeClass)
+								{
+									UGameplayStatics::ApplyDamage(Main, DamageIfBlocked, AIController, this,
+									                              DamageTypeClass);
+								}
+
+								Main->SetStamina(Main->GetStamina() - MeleeWeapon->BlockStaminaCost);
+
+								int32 Section = FMath::RandRange(4, 6);
+
+								// Character Weapon Block Impact Animation
+								Main->
+									PlayBlockImpactAnimation(
+										Section);  // +3 because first 3 attack sections are for shield blocking
+
+								// Play the MeleeWeapon's Block Sound 
+								MeleeWeapon->PlayBlockSound();
+
+								// Emit the MeleeWeapon's Hit Particles
+								MeleeWeapon->EmitHitParticles();
 							}
 						}
 					}

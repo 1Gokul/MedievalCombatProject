@@ -24,10 +24,16 @@ class TESTPROJECT_API AShield : public AItem
 {
 	GENERATED_BODY()
 
+	FName HitSocketName;
 
 public:
 
 	AShield();
+
+protected:
+
+	void BeginPlay() override;
+
 
 	UPROPERTY(EditDefaultsOnly, Category = "SavedData")
 	FString Name;
@@ -51,11 +57,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items | Block")
 	AController* ShieldInstigator;
 
-	FName HitSocketName;
-
-protected:
-
-	void BeginPlay() override;
 
 public:
 	bool UseItem(AMain* Main) override;
@@ -79,4 +80,9 @@ public:
 	FORCEINLINE EShieldState GetShieldState() { return ShieldState; }
 
 	FORCEINLINE void SetInstigator(AController* Shield_Instigator) { ShieldInstigator = Shield_Instigator; }
+
+	float GetBlockStaminaCost() const { return BlockStaminaCost; }
+
+	void PlayBlockSound();
+	void EmitHitParticles();
 };

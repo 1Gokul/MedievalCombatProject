@@ -11,6 +11,10 @@ class TESTPROJECT_API AFloorSwitch : public AActor
 {
 	GENERATED_BODY()
 
+	FTimerHandle SwitchHandle;
+
+	bool bCharacterOnSwitch;
+
 public:
 	// Sets default values for this actor's properties
 	AFloorSwitch();
@@ -27,21 +31,19 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = FloorSwitch)
 	class UStaticMeshComponent* Door;
 
-	/** Initial Location of Door*/
+	/** Initial Location of Door */
 	UPROPERTY(BlueprintReadWrite, Category = FloorSwitch)
 	FVector InitialDoorLocation;
 
-	/** Initial Location of Floor Switch*/
+	/** Initial Location of Floor Switch */
 	UPROPERTY(BlueprintReadWrite, Category = FloorSwitch)
 	FVector InitialSwitchLocation;
 
-	FTimerHandle SwitchHandle;
 
 	/**Time delay before the door closes after the player leaves the floor switch*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = FloorSwitch)
 	float SwitchTime;
 
-	bool bCharacterOnSwitch;
 
 protected:
 	// Called when the game starts or when spawned

@@ -9,7 +9,7 @@ bool AFoodItem::UseItem(AMain* Main)
 {
 	// Call the base function
 	Super::UseItem(Main);
-	
+
 	Main->IncrementHealth(HealthToHeal);
 
 	return true;

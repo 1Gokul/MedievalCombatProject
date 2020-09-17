@@ -15,14 +15,11 @@ class TESTPROJECT_API AFoodItem : public AItem
 	GENERATED_BODY()
 
 public:
+	bool UseItem(AMain* Main) override;
+
+protected:
 
 	/** The amount by which the Player's health  will increase when this Food Item is consumed. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item", meta = (ClampMin = 0.0))
 	float HealthToHeal;
-
-protected:
-
-
-public:
-	bool UseItem(AMain* Main) override;
 };

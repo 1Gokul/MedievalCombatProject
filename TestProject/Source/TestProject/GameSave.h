@@ -72,5 +72,5 @@ public:
 	FCharacterStats CharacterStats;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Basic)
-	TArray<FSlotStructure> Inventory;	
+	TArray<FSlotStructure> Inventory;
 };

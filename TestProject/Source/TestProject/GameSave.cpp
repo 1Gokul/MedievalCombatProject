@@ -11,5 +11,4 @@ UGameSave::UGameSave()
 
 	CharacterStats.EquippedWeaponName = TEXT("");
 	CharacterStats.LevelName = TEXT("");
-
 }

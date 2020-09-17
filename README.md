@@ -7,10 +7,12 @@
   - Visual Studio Community 2019 (version 16.5.5)
  
 ## Asset Packs Used:
+  - Animation Assets from Mixamo
   - Infinity Blade: Adversaries
   - Infinity Blade: Effects
   - Infinity Blade: Grass Lands
   - Infinity Blade: Weapons
   - Paragon: Minions
+  - Spring Landscape
   
   

@@ -42,6 +42,7 @@ AItem::AItem()
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	StaticMesh->SetupAttachment(GetRootComponent());
 
+
 	IdleParticlesComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("IdleParticlesComponent"));
 	IdleParticlesComponent->SetupAttachment(GetRootComponent());
 
@@ -78,13 +79,15 @@ void AItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 	// Check if the OtherActor is the Character
 	AMain* Main = Cast<AMain>(OtherActor);
 
-	if(Main)
+	if (Main)
 	{
 		// If it is, display the Item Interact Prompt.
-		if(Main->MainPlayerController)
+		if (Main->GetMainPlayerController())
 		{
 			// ItemInteract text has been defined as "Take". 
-			Main->MainPlayerController->DisplayItemInteractPrompt(ItemStructure.ItemDisplayName.ToString(), ItemStructure.Weight, ItemStructure.Value, ItemInteractText);
+			Main->GetMainPlayerController()->DisplayItemInteractPrompt(ItemStructure.ItemDisplayName.ToString(),
+			                                                           ItemStructure.Weight, ItemStructure.Value,
+			                                                           ItemInteractText);
 		}
 	}
 }
@@ -95,12 +98,12 @@ void AItem::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* Other
 	// Check if the OtherActor is the Character
 	AMain* Main = Cast<AMain>(OtherActor);
 
-	if(Main)
+	if (Main)
 	{
 		// If it is, display the Item Interact Prompt.
-		if(Main->MainPlayerController)
-		{			
-			Main->MainPlayerController->RemoveItemInteractPrompt();
+		if (Main->GetMainPlayerController())
+		{
+			Main->GetMainPlayerController()->RemoveItemInteractPrompt();
 		}
 	}
 }
@@ -124,14 +127,14 @@ void AItem::Interact(AActor* Interacter)
 	if (Main)
 	{
 		Main->ResetIdleTimer();
-		
+
 		//Add values to a SlotStructure Object
 		FSlotStructure SlotStructure;
 		SlotStructure.ItemStructure = ItemStructure;
 		SlotStructure.Quantity = 1;
 
 		// Add the object to the Inventory
-		bool Success = Main->InventoryComponent->AddToInventory(SlotStructure);
+		bool Success = Main->GetInventoryComponent()->AddToInventory(SlotStructure);
 
 		if (Success)Destroy();
 	}
@@ -140,6 +143,6 @@ void AItem::Interact(AActor* Interacter)
 bool AItem::UseItem(AMain* Main)
 {
 	Main->ResetIdleTimer();
-	
+
 	return true;
 }

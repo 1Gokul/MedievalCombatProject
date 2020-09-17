@@ -11,6 +11,10 @@ class TESTPROJECT_API AFloatingPlatform : public AActor
 {
 	GENERATED_BODY()
 
+	FTimerHandle InterpTimer;
+
+	float Distance;
+
 public:
 	// Sets default values for this actor's properties
 	AFloatingPlatform();
@@ -35,12 +39,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Platform)
 	float InterpTime;
 
-	FTimerHandle InterpTimer;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Platform)
 	bool bIsInterping;
 
-	float Distance;
+
 protected:
 	// Called when the game starts or when spawned
 	void BeginPlay() override;

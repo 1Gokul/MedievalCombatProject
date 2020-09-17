@@ -67,14 +67,14 @@ class TESTPROJECT_API AItem : public AActor, public IInteractInterface
 {
 	GENERATED_BODY()
 
+
+	const FName ItemInteractText = FName("Take");
+
 public:
 	// Sets default values for this actor's properties
 	AItem();
 
-	UPROPERTY(Transient)
-	class UWorld* World;
-
-	const FName ItemInteractText = FName("Take");
+protected:
 
 	/** Item Stats*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ItemStructure")
@@ -147,6 +147,8 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	virtual bool UseItem(class AMain* Main);
+
+	FORCEINLINE FItemStructure GetItemStructure() const { return ItemStructure; }
 
 	//virtual class UWorld* ItemGetWorld() const {return World;};
 };

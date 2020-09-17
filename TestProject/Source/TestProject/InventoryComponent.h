@@ -118,5 +118,4 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool ShouldUnequipWeaponOrShield(TSubclassOf<AItem> ItemToCheck, AMain* Main);
-
 };

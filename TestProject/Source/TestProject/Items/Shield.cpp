@@ -30,12 +30,12 @@ bool AShield::UseItem(AMain* Main)
 {
 	// Call the base function
 	Super::UseItem(Main);
-	
-	if (Main->EquippedWeapon)
+
+	if (Main->GetEquippedWeapon())
 	{
-		if (Main->EquippedWeapon->bIsTwoHanded)
+		if (Main->GetEquippedWeapon()->IsTwoHanded())
 		{
-			Main->EquippedWeapon->Destroy();
+			Main->GetEquippedWeapon()->Destroy();
 			Main->SetEquippedWeapon(nullptr);
 		}
 	}
@@ -48,7 +48,7 @@ bool AShield::UseItem(AMain* Main)
 
 	StaticMesh->SetSimulatePhysics(false);
 
-	const USkeletalMeshSocket* LeftHandSocket = Main->GetMesh()->GetSocketByName("LeftHandSocket");
+	const USkeletalMeshSocket* LeftHandSocket = Main->GetMesh()->GetSocketByName("LeftHandSocket_Shield");
 
 
 	if (LeftHandSocket)
@@ -101,7 +101,7 @@ void AShield::Equip(AMain* Char)
 {
 	if (Char)
 	{
-		Char->bInCombatMode = true;
+		Char->SetInCombatMode(true);
 
 		SetInstigator(Char->GetController());
 		StaticMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
@@ -109,7 +109,7 @@ void AShield::Equip(AMain* Char)
 
 		StaticMesh->SetSimulatePhysics(false);
 
-		const USkeletalMeshSocket* LeftHandSocket = Char->GetMesh()->GetSocketByName("LeftHandSocket");
+		const USkeletalMeshSocket* LeftHandSocket = Char->GetMesh()->GetSocketByName("LeftHandSocket_Shield");
 
 
 		if (LeftHandSocket)
@@ -125,4 +125,18 @@ void AShield::Equip(AMain* Char)
 			UGameplayStatics::PlaySound2D(this, OnEquipSound);
 		}
 	}
+}
+
+void AShield::PlayBlockSound()
+{
+	if (BlockSound)
+	{
+		UGameplayStatics::PlaySound2D(this, BlockSound);
+	}
+}
+
+void AShield::EmitHitParticles()
+{
+	FVector SocketLocation = StaticMesh->GetSocketLocation(HitSocketName);
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, SocketLocation, FRotator(0.0f), true);
 }

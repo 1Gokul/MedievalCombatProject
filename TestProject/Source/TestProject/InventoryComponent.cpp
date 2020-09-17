@@ -195,38 +195,36 @@ bool UInventoryComponent::InventoryQuery(TSubclassOf<AItem> QueryItem, int32 Que
 
 bool UInventoryComponent::ShouldUnequipWeaponOrShield(TSubclassOf<AItem> ItemToCheck, AMain* Main)
 {
-	if (Main->EquippedWeapon)
+	// If the ItemToCheck matches with the EquippedWeapon
+	if (Main->GetEquippedWeapon() && ItemToCheck == Main->GetEquippedWeapon()->GetClass())
 	{
-		if (ItemToCheck == Main->EquippedWeapon->GetClass())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Same as weapon!!"));
+		UE_LOG(LogTemp, Warning, TEXT("Unequipping weapon!!"));
 
-			AWeapon* Temp = Main->EquippedWeapon;
-			Main->SetEquippedWeapon(nullptr);
+		AWeapon* Temp = Main->GetEquippedWeapon();
+		Main->SetEquippedWeapon(nullptr);
 
-			Temp->Destroy();
+		Temp->Destroy();
 
-			Main->bIsWeaponDrawn = false;
+		if (Main->GetbAttacking())Main->SetbAttacking(false);
+		if (Main->GetbIsWeaponDrawn())Main->SetbIsWeaponDrawn(false);
 
-			return true;
-		}
+		return true;
 	}
-	else if (Main->EquippedShield/* && Shield*/)
+	// Else if the ItemToCheck matches with the EquippedShield
+	if (Main->GetEquippedShield() && ItemToCheck == Main->GetEquippedShield()->GetClass())
 	{
-		if (ItemToCheck == Main->EquippedShield->GetClass())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Same as shield!!"));
+		UE_LOG(LogTemp, Warning, TEXT("Unequipping shield!!"));
 
-			AShield* Temp = Main->EquippedShield;
-			Main->SetEquippedShield(nullptr);
+		AShield* Temp = Main->GetEquippedShield();
+		Main->SetEquippedShield(nullptr);
 
-			Temp->Destroy();
+		Temp->Destroy();
 
-			//Main->CheckPlayerStatus();
+		if (Main->GetbBlocking())Main->SetbBlocking(false);
 
-			return true;
-		}
+		//Main->CheckPlayerStatus();
+
+		return true;
 	}
-		return false; 	
+	return false;
 }
-

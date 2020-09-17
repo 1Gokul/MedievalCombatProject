@@ -21,8 +21,25 @@ public:
 
 	void NativeInitializeAnimation() override;
 
+	FORCEINLINE float GetMovementSpeed() const { return MovementSpeed; }
+
+	FORCEINLINE float GetSpeedForward() const { return SpeedForward; }
+
+	FORCEINLINE float GetSpeedRight() const { return SpeedRight; }
+
+	FORCEINLINE bool IsInAir() const { return bIsInAir; }
+
+
+protected:
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
 	float MovementSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
+	float SpeedForward;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
+	float SpeedRight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
 	bool bIsInAir;

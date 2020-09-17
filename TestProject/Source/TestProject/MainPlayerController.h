@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Main.h"
 #include "GameFramework/PlayerController.h"
 #include "MainPlayerController.generated.h"
 
@@ -14,30 +15,12 @@ class TESTPROJECT_API AMainPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
-
-protected:
-
-	void BeginPlay() override;
-	void Tick(float DeltaTime) override;
-
 public:
 
 	void GameModeOnly();
 	void GameAndUIMode();
 
 	bool bUIWidgetCurrentlyActive();
-
-	/** For Player HUD	*/
-
-	/** Reference to the UMG asset in the editor */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	TSubclassOf<class UUserWidget> HUDOverlayAsset;
-
-	/** Variable to hold the widget after creating it */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
-	UUserWidget* HUDOverlay;
-
-	bool bHUDVisible;
 
 	// Display the HUD when the Character is active
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
@@ -46,32 +29,9 @@ public:
 	// Remove the HUD when the Character is idle for more than IdleTimerLimit seconds.
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
 	void HideHUD();
-	
-
-	/** For Enemy health bar */
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	TSubclassOf<UUserWidget> WEnemyHealthBar;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
-	UUserWidget* EnemyHealthBar;
-
-	bool bEnemyHealthBarVisible;
-
-	FVector EnemyLocation;
 
 	void DisplayEnemyHealthBar();
 	void RemoveEnemyHealthBar();
-
-	/** Pause Menu*/
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
-	TSubclassOf<UUserWidget> WPauseMenu;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
-	UUserWidget* PauseMenu;
-
-	bool bPauseMenuVisible;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
 	void DisplayPauseMenu();
@@ -82,7 +42,7 @@ public:
 	void TogglePauseMenu();
 
 	/** Item Pickup prompt */
-	bool bItemInteractPromptVisible;
+
 
 	// Display the pickup prompt widget
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
@@ -93,7 +53,7 @@ public:
 	void RemoveItemInteractPrompt();
 
 	/** Search prompt */
-	bool bSearchPromptVisible;
+
 
 	// Display the pickup prompt widget
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
@@ -105,7 +65,6 @@ public:
 
 	/** Inventory Menu*/
 
-	bool bInventoryMenuVisible;
 
 	void ToggleInventoryMenu(class UInventoryComponent* InventoryComponent);
 
@@ -116,4 +75,68 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "HUD")
 	void RemoveInventoryMenu();
 
+	void SetEnemyLocation(const FVector& InLocation) { EnemyLocation = InLocation; }
+
+	bool IsAnyMenuVisible();
+
+	FORCEINLINE bool IsHUDVisible() const { return bHUDVisible; }
+
+	FORCEINLINE bool IsInventoryMenuVisible() const { return bInventoryMenuVisible; }
+
+	FORCEINLINE bool IsPauseMenuVisible() const { return bPauseMenuVisible; }
+
+	FORCEINLINE bool IsSearchPromptVisible() const { return bSearchPromptVisible; }
+
+	FORCEINLINE bool IsItemInteractPromptVisible() const { return bItemInteractPromptVisible; }
+
+
+protected:
+
+	void BeginPlay() override;
+	void Tick(float DeltaTime) override;
+
+	/** For Player HUD	*/
+
+	/** Reference to the UMG asset in the editor */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<class UUserWidget> HUDOverlayAsset;
+
+	/** Variable to hold the widget after creating it */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* HUDOverlay;
+
+
+	/** For Enemy health bar */
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<UUserWidget> WEnemyHealthBar;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* EnemyHealthBar;
+
+
+	/** Pause Menu*/
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<UUserWidget> WPauseMenu;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+	UUserWidget* PauseMenu;
+
+
+private:
+	bool bHUDVisible;
+
+	bool bEnemyHealthBarVisible;
+
+	bool bPauseMenuVisible;
+
+	bool bItemInteractPromptVisible;
+
+	bool bSearchPromptVisible;
+
+	bool bInventoryMenuVisible;
+
+	// Enemy health bar will be displayed at this location.
+	FVector EnemyLocation;
 };

@@ -8,6 +8,11 @@
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 
+bool AMainPlayerController::IsAnyMenuVisible()
+{
+	return (bPauseMenuVisible || bInventoryMenuVisible);
+}
+
 void AMainPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -28,7 +33,7 @@ void AMainPlayerController::BeginPlay()
 			HUDOverlay->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
-	
+
 	if (WEnemyHealthBar)
 	{
 		EnemyHealthBar = CreateWidget<UUserWidget>(this, WEnemyHealthBar);
@@ -137,7 +142,8 @@ void AMainPlayerController::TogglePauseMenu()
 	}
 }
 
-void AMainPlayerController::DisplayItemInteractPrompt_Implementation(const FString& ItemName, float Weight, int32 Value, FName InteractText)
+void AMainPlayerController::DisplayItemInteractPrompt_Implementation(const FString& ItemName, float Weight, int32 Value,
+                                                                     FName InteractText)
 {
 	bItemInteractPromptVisible = true;
 }

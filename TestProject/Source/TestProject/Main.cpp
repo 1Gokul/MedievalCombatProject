@@ -26,6 +26,7 @@
 #include "Animation/AnimInstance.h"
 #include "Sound/SoundCue.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Items/MeleeWeapon.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 
 
@@ -38,7 +39,7 @@ AMain::AMain()
 	// Spring Arm (pulls towards player)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetRootComponent());	// Attach to root component
-	CameraBoom->TargetArmLength = 600.0f;	// Camera follows at this distance
+	CameraBoom->TargetArmLength = 150.0f;	// Camera follows at this distance
 	CameraBoom->bUsePawnControlRotation = true;		// Rotate arm based on controller
 
 	// Set size of collision capsule
@@ -62,7 +63,7 @@ AMain::AMain()
 
 
 	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character rotates to direction of input.
+	//GetCharacterMovement()->bOrientRotationToMovement = true; // Character rotates to direction of input.
 	GetCharacterMovement()->RotationRate = FRotator(0.0, 1000.0f, 0.0f);
 	GetCharacterMovement()->JumpZVelocity = 650.0f;
 	GetCharacterMovement()->AirControl = 0.20f;
@@ -125,11 +126,12 @@ AMain::AMain()
 	HitSocketNames.Add("HeadRearHitSocket");
 
 	// Number of Idle Animations for each state
-	NumberOfIdleAnims.Add(6);
-	NumberOfIdleAnims.Add(6);
-	NumberOfIdleAnims.Add(6);
-	NumberOfIdleAnims.Add(5);
-	NumberOfIdleAnims.Add(4);
+	NumberOfIdleAnims.Add(6);	// UnarmedNormal
+	NumberOfIdleAnims.Add(6);	// UnarmedCombat
+	NumberOfIdleAnims.Add(6);	// ShieldOnly
+	NumberOfIdleAnims.Add(5);	// OneHandedMelee
+	NumberOfIdleAnims.Add(4);	// TwoHandedMelee
+	NumberOfIdleAnims.Add(4);	// Bow
 
 	// Delegate calls IdleEnd after Timer reaches zero, when Player is in 
 	TimerDel.BindUFunction(this, FName("IdleEnd"), static_cast<int32>(PlayerStatus));
@@ -171,13 +173,26 @@ void AMain::CheckPlayerStatus()
 	{
 		if (EquippedWeapon)
 		{
-			if (EquippedWeapon->bIsTwoHanded)SetPlayerStatus(EPlayerStatus::EPS_CombatArmed_2H);
-			else SetPlayerStatus(EPlayerStatus::EPS_CombatArmed_1H);
+			// Set the PlayerStatus depending on the Weapon Type
+			switch (EquippedWeapon->GetWeaponType())
+			{
+			case EWeaponType::EWT_OneHandedMelee: SetPlayerStatus(EPlayerStatus::EPS_CombatArmed_1HM);
+				break;
+
+			case EWeaponType::EWT_TwoHandedMelee: SetPlayerStatus(EPlayerStatus::EPS_CombatArmed_2HM);
+				break;
+
+			case EWeaponType::EWT_Bow: SetPlayerStatus(EPlayerStatus::EPS_CombatArmed_Bow);
+				break;
+
+			default: SetPlayerStatus((EPlayerStatus::EPS_CombatArmed_1HM));
+				break;
+			}
 		}
 		else
 		{
 			if (EquippedShield)SetPlayerStatus(EPlayerStatus::EPS_ShieldUnarmed);
-			else SetPlayerStatus(EPlayerStatus::EPS_UnarmedCombat);
+			else SetPlayerStatus(EPlayerStatus::EPS_CombatUnarmed);
 		}
 	}
 	else
@@ -186,15 +201,8 @@ void AMain::CheckPlayerStatus()
 	}
 }
 
-//  Called every frame
-void AMain::Tick(float DeltaTime)
+void AMain::CheckStaminaStatus(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-
-	if (MovementStatus == EMovementStatus::EMS_Dead)return;
-
-	CheckPlayerStatus();
-
 	//  Decrease in Stamina per second when sprinting.
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
 
@@ -307,6 +315,18 @@ void AMain::Tick(float DeltaTime)
 	default:
 		break;
 	}
+}
+
+//  Called every frame
+void AMain::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (MovementStatus == EMovementStatus::EMS_Dead)return;
+
+	CheckPlayerStatus();
+
+	CheckStaminaStatus(DeltaTime);
 
 	if (bInterpToEnemy && CombatTarget)
 	{
@@ -323,7 +343,7 @@ void AMain::Tick(float DeltaTime)
 
 		if (MainPlayerController)
 		{
-			MainPlayerController->EnemyLocation = CombatTargetLocation;
+			MainPlayerController->SetEnemyLocation(CombatTargetLocation);
 		}
 	}
 
@@ -332,7 +352,7 @@ void AMain::Tick(float DeltaTime)
 	{
 		// If an Idle Animation is not already playing AND the Player is not moving
 		if (IdleAnimSlot == 0
-			&& (Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance())->MovementSpeed == 0))
+			&& (Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance())->GetMovementSpeed() == 0.0f))
 		{
 			// Start the Timer and set it for IdleTimeLimit seconds.
 			GetWorldTimerManager().SetTimer(IdleAnimTimerHandle, TimerDel, IdleTimeLimit, false);
@@ -380,6 +400,9 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMain::EKeyDown).bExecuteWhenPaused = true;
 	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMain::EKeyUp).bExecuteWhenPaused = true;
+
+	PlayerInputComponent->BindAction("ResetCamera", IE_Pressed, this, &AMain::CKeyDown);
+	PlayerInputComponent->BindAction("ResetCamera", IE_Released, this, &AMain::CKeyUp);
 }
 
 bool AMain::bCanMove(float Value)
@@ -390,8 +413,7 @@ bool AMain::bCanMove(float Value)
 			(Value != 0.0f)		// If Value to move is 0
 			&& (!bAttacking)	// If Attacking
 			&& (MovementStatus != EMovementStatus::EMS_Dead)	// If not Dead
-			&& (!MainPlayerController->bPauseMenuVisible)		// If Pause Menu Visible
-			&& (!MainPlayerController->bInventoryMenuVisible)	// If Inventory Menu Visible
+			&& (!MainPlayerController->IsAnyMenuVisible())	// If Inventory Menu Visible
 		);
 	}
 	return false;
@@ -400,11 +422,11 @@ bool AMain::bCanMove(float Value)
 void AMain::ResetIdleTimer()
 {
 	// If the HUD is not currently visible, display it
-	if(!MainPlayerController->bHUDVisible)
+	if (!MainPlayerController->IsHUDVisible())
 	{
 		MainPlayerController->DisplayHUD();
 	}
-	
+
 	// Reset the Idle Anim Slot
 	IdleAnimSlot = 0;
 
@@ -429,6 +451,16 @@ void AMain::MoveForward(float Value)
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		AddMovementInput(Direction, Value);
 
+		/*if(bShiftKeyDown)
+		{
+			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+
+			if(MainAnimInstance)
+			{
+				AddActorLocalRotation(FRotator(0.0f, MainAnimInstance->GetMovementSpeed(), 0.0f));
+			}
+		}*/
+
 		bMovingForward = true;
 	}
 }
@@ -438,7 +470,8 @@ void AMain::MoveRight(float Value)
 {
 	bMovingRight = false;
 
-	if (bCanMove(Value))
+	// If the Character can move AND is not sprinting(Because currently Strafing is not allowed while sprinting)
+	if (bCanMove(Value) && (MovementStatus != EMovementStatus::EMS_Sprinting))
 	{
 		ResetIdleTimer();
 
@@ -447,6 +480,16 @@ void AMain::MoveRight(float Value)
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		AddMovementInput(Direction, Value);
+
+		/*if(bShiftKeyDown)
+		{
+			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+
+			if(MainAnimInstance)
+			{
+				AddActorLocalRotation(FRotator(0.0f, MainAnimInstance->GetMovementSpeed(), 0.0f));
+			}
+		}*/
 
 		bMovingRight = true;
 	}
@@ -494,7 +537,7 @@ void AMain::LMBDown()
 
 	if (MainPlayerController)
 	{
-		if (MainPlayerController->bPauseMenuVisible)return;
+		if (MainPlayerController->IsPauseMenuVisible())return;
 	}
 
 
@@ -543,10 +586,10 @@ void AMain::LMBDown()
 		if (MainAnimInstance)
 		{
 			// If Player is not currently falling
-			if (!MainAnimInstance->bIsInAir)
+			if (!MainAnimInstance->IsInAir())
 			{
 				if (bInCombatMode)MeleeAttack();
-				else DrawWeapon();
+				else EnterCombatMode();
 			}
 		}
 	}
@@ -569,7 +612,7 @@ void AMain::RMBDown()
 
 	if (MainPlayerController)
 	{
-		if (MainPlayerController->bPauseMenuVisible)return;
+		if (MainPlayerController->IsPauseMenuVisible())return;
 	}
 
 	/** else if Player already has a shield equipped AND
@@ -579,37 +622,15 @@ void AMain::RMBDown()
 	{
 		ResetIdleTimer();
 
-		// Blocking with a Weapon should only be allowed if the weapon is Two-Handed.
-		if (EquippedWeapon && !EquippedShield)
-		{
-			if (EquippedWeapon->bIsTwoHanded)
-			{
-				UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
-				if (MainAnimInstance)
-				{
-					// If Player is not currently falling
-					if (!MainAnimInstance->bIsInAir)
-					{
-						if (bInCombatMode)
-						{
-							if (!bBlocking)
-							{
-								bBlocking = true;
-							}
-						}
-						else bInCombatMode = true;
-					}
-				}
-			}
-		}
-		else
+		// Blocking should be performed only with a Shield or a Two-Handed Melee Weapon.
+		if ((EquippedWeapon && !EquippedShield && (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_TwoHandedMelee))
+			|| (EquippedShield))
 		{
 			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
-
 			if (MainAnimInstance)
 			{
 				// If Player is not currently falling
-				if (!MainAnimInstance->bIsInAir)
+				if (!MainAnimInstance->IsInAir())
 				{
 					if (bInCombatMode)
 					{
@@ -618,7 +639,11 @@ void AMain::RMBDown()
 							bBlocking = true;
 						}
 					}
-					else bInCombatMode = true;
+					else
+					{
+						CombatModeCameraZoomOut();
+						bInCombatMode = true;
+					}
 				}
 			}
 		}
@@ -638,7 +663,7 @@ void AMain::ESCDown()
 	if (MainPlayerController)
 	{
 		// If a UI Widget (Other than the HUD) is not currently active, display the Pause menu.
-		if (!MainPlayerController->bInventoryMenuVisible)
+		if (!MainPlayerController->IsInventoryMenuVisible())
 		{
 			MainPlayerController->TogglePauseMenu();
 		}
@@ -657,47 +682,34 @@ void AMain::RKeyDown()
 
 	ResetIdleTimer();
 
-	/** If already in Combat Mode, switch back to Normal Mode and Sheathe the Weapon, if equipped. */
+	/** If already in Combat Mode, switch back to Normal Mode. */
 	if (bInCombatMode && !bBlocking)
 	{
-		SheatheWeapon();
+		LeaveCombatMode();
 	}
 
-		/** If in Normal Mode, switch to Combat Mode and draw the Weapon, if it exists.*/
+		/** If in Normal Mode, switch to Combat Mode. */
 	else
 	{
-		DrawWeapon();
+		EnterCombatMode();
 	}
 }
 
 
-void AMain::CrouchEnd()
+void AMain::LeaveCombatMode()
 {
-	if (GetCharacterMovement()->IsCrouching())
-	{
-		UnCrouch();
-	}
-	else
-	{
-		Crouch();
-	}
-}
+	NormalModeCameraZoomIn();
 
-void AMain::SheatheWeapon()
-{
 	bInCombatMode = false;
 	bAttacking = false;
 
-
+	// If a weapon is equipped, sheathe it.
 	if (bIsWeaponDrawn && EquippedWeapon)
 	{
 		bIsWeaponDrawn = false;
 
 		// Play the Sheath sound
-		if (EquippedWeapon->OnSheathSound)
-		{
-			UGameplayStatics::PlaySound2D(this, EquippedWeapon->OnSheathSound);
-		}
+		EquippedWeapon->PlaySheathSound();
 
 		// Play the Sheath Animation
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -706,23 +718,22 @@ void AMain::SheatheWeapon()
 		{
 			AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 
-			if (EquippedWeapon->bIsTwoHanded)
-				AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_TwoHanded"), UpperBodyMontage);
-
-			else AnimInstance->Montage_JumpToSection(FName("SheatheWeapon_OneHanded"), UpperBodyMontage);
+			AnimInstance->Montage_JumpToSection(EquippedWeapon->GetSheathAnimName(), UpperBodyMontage);
 		}
 	}
 }
 
 void AMain::TimedSheathe()
 {
+	//AMeleeWeapon* MeleeWeapon = Cast<AMeleeWeapon>(EquippedWeapon);
+
 	if (EquippedWeapon)
 	{
-		EquippedWeapon->DeactivateCollision();
+		//MeleeWeapon->DeactivateCollision();
 
 		EquippedWeapon->SetInstigator(nullptr);
 
-		const USkeletalMeshSocket* SheathSocket = GetMesh()->GetSocketByName(EquippedWeapon->SheathSocketName);
+		const USkeletalMeshSocket* SheathSocket = GetMesh()->GetSocketByName(EquippedWeapon->GetSheathSocketName());
 
 		if (SheathSocket)
 		{
@@ -731,19 +742,19 @@ void AMain::TimedSheathe()
 	}
 }
 
-void AMain::DrawWeapon()
+void AMain::EnterCombatMode()
 {
+	CombatModeCameraZoomOut();
+
 	bInCombatMode = true;
 
+	// If a weapon is equipped, draw it.
 	if (!bIsWeaponDrawn && EquippedWeapon)
 	{
 		bIsWeaponDrawn = true;
 
 		// Play the Draw sound
-		if (EquippedWeapon->OnEquipSound)
-		{
-			UGameplayStatics::PlaySound2D(this, EquippedWeapon->OnEquipSound);
-		}
+		EquippedWeapon->PlayDrawSound();
 
 		// Play the Draw Animation
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -752,9 +763,7 @@ void AMain::DrawWeapon()
 		{
 			AnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 
-			if (EquippedWeapon->bIsTwoHanded)
-				AnimInstance->Montage_JumpToSection(FName("DrawWeapon_TwoHanded"), UpperBodyMontage);
-			else AnimInstance->Montage_JumpToSection(FName("DrawWeapon_OneHanded"), UpperBodyMontage);
+			AnimInstance->Montage_JumpToSection(EquippedWeapon->GetDrawAnimName(), UpperBodyMontage);
 		}
 	}
 }
@@ -765,7 +774,7 @@ void AMain::TimedDraw()
 	{
 		EquippedWeapon->SetInstigator(nullptr);
 
-		const USkeletalMeshSocket* RightHandSocket = GetMesh()->GetSocketByName(EquippedWeapon->HandSocketName);
+		const USkeletalMeshSocket* RightHandSocket = GetMesh()->GetSocketByName(EquippedWeapon->GetHandSocketName());
 
 		if (RightHandSocket)
 		{
@@ -791,6 +800,8 @@ void AMain::CtrlDown()
 
 		PlayerUnCrouch();
 
+		GetCharacterMovement()->bOrientRotationToMovement = false; // Character rotates to direction of input.
+
 		// GetCapsuleComponent()->SetCapsuleRadius(36.0);
 	}
 	else
@@ -799,7 +810,21 @@ void AMain::CtrlDown()
 
 		PlayerCrouch();
 
+		GetCharacterMovement()->bOrientRotationToMovement = true; // Character rotates to direction of input.
+
 		// GetCapsuleComponent()->SetCapsuleRadius(60.0);
+	}
+}
+
+void AMain::CrouchEnd()
+{
+	if (GetCharacterMovement()->IsCrouching())
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Crouch();
 	}
 }
 
@@ -815,7 +840,7 @@ void AMain::TabDown()
 	if (MainPlayerController)
 	{
 		// If a UI Widget (Other than the HUD) is not currently active, display the Inventory menu.
-		if (!MainPlayerController->bPauseMenuVisible)
+		if (!MainPlayerController->IsPauseMenuVisible())
 		{
 			MainPlayerController->ToggleInventoryMenu(InventoryComponent);
 		}
@@ -850,6 +875,18 @@ void AMain::EKeyDown()
 	}
 }
 
+void AMain::CKeyUp()
+{
+	bCKeyDown = false;
+}
+
+void AMain::CKeyDown()
+{
+	bCKeyDown = true;
+
+	CenterCamera(GetMesh()->GetComponentRotation().Add(0.0f, 90.0f, 0.0f));
+}
+
 
 void AMain::SetInterpToEnemy(bool Interp)
 {
@@ -869,7 +906,8 @@ void AMain::PlayMeleeAttack(int32 Section)
 	if (AnimInstance && CombatMontage)
 	{
 		// Used for Enemy Hit Reaction
-		if (EquippedWeapon)EquippedWeapon->MainAttackSection = Section;
+		AMeleeWeapon* MeleeWeapon = Cast<AMeleeWeapon>(EquippedWeapon);
+		if (MeleeWeapon)MeleeWeapon->SetMainAttackSection(Section);
 
 
 		FString AttackName;
@@ -879,8 +917,7 @@ void AMain::PlayMeleeAttack(int32 Section)
 		// If attack is using a weapon
 		if (bIsWeaponDrawn)
 		{
-			if (EquippedWeapon->bIsTwoHanded)AttackName.Append("TwoHandedAttack_");
-			else AttackName.Append("OneHandedAttack_");
+			AttackName.Append(EquippedWeapon->GetAttackAnimPrefix());
 
 			if (!bCrouched)
 			{
@@ -894,7 +931,7 @@ void AMain::PlayMeleeAttack(int32 Section)
 			}
 		}
 
-			// else if melee attack
+			// else if unarmed melee attack
 		else
 		{
 			// If Player has a Shield equipped, play the even-numbered attacks(right-handed attacks) only.
@@ -905,7 +942,7 @@ void AMain::PlayMeleeAttack(int32 Section)
 				if (Section % 2)Section -= 1;	// Set Section to play the 2nd Animation if RandRange returns 3.
 			}
 
-			AttackName.Append("MeleeAttack_");
+			AttackName.Append("UnarmedMeleeAttack_");
 		}
 
 		AttackName.AppendInt(Section);
@@ -1043,7 +1080,7 @@ void AMain::Impact(int32 Section)
 }
 
 
-void AMain::BlockImpact(int32 Section)
+void AMain::PlayBlockImpactAnimation(int32 Section)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -1148,22 +1185,31 @@ void AMain::SetEquippedShield(AShield* ShieldToSet)
 void AMain::ShiftKeyDown()
 {
 	bShiftKeyDown = true;
+
+	SprintStartCameraZoomOut();
 }
 
 void AMain::ShiftKeyUp()
 {
 	bShiftKeyDown = false;
+
+	SprintEndCameraZoomIn();
 }
 
 void AMain::PlaySwingSound()
 {
-	// Each weapon has specefic Swing Sounds depending on the current Attack number.
-	if (SwingSoundIndex < EquippedWeapon->SwingSounds.Num())
+	AMeleeWeapon* MeleeWeapon = Cast<AMeleeWeapon>(EquippedWeapon);
+
+	if (MeleeWeapon)
 	{
-		if (EquippedWeapon->SwingSounds[SwingSoundIndex])
+		// Each MeleeWeapon has specific Swing Sounds depending on the current Attack number.
+		if (SwingSoundIndex < MeleeWeapon->SwingSounds.Num())
 		{
-			UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSounds[SwingSoundIndex]);
-			++SwingSoundIndex;
+			if (MeleeWeapon->SwingSounds[SwingSoundIndex])
+			{
+				UGameplayStatics::PlaySound2D(this, MeleeWeapon->SwingSounds[SwingSoundIndex]);
+				++SwingSoundIndex;
+			}
 		}
 	}
 }
@@ -1184,7 +1230,7 @@ float AMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, ACo
 
 			if (Enemy)
 			{
-				Enemy->bHasValidTarget = false;
+				Enemy->SetHasValidTarget(false);
 			}
 		}
 	}
@@ -1203,13 +1249,13 @@ void AMain::Jump()
 {
 	if (MainPlayerController)
 	{
-		if (MainPlayerController->bPauseMenuVisible)return;
+		if (MainPlayerController->IsPauseMenuVisible())return;
 	}
 
 	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking) && (!bAttacking))
 	{
 		ResetIdleTimer();
-		
+
 		Super::Jump();
 	}
 }
@@ -1304,13 +1350,13 @@ void AMain::SaveGame()
 	// Save the name of the EquippedWeapon, if equipped.
 	if (EquippedWeapon)
 	{
-		SaveGameInstance->CharacterStats.EquippedWeaponName = EquippedWeapon->ItemStructure.ItemDisplayName;
+		SaveGameInstance->CharacterStats.EquippedWeaponName = EquippedWeapon->GetItemStructure().ItemDisplayName;
 	}
 
 	// Save the name of the EquippedShield, if equipped.
 	if (EquippedShield)
 	{
-		SaveGameInstance->CharacterStats.EquippedShieldName = EquippedShield->ItemStructure.ItemDisplayName;
+		SaveGameInstance->CharacterStats.EquippedShieldName = EquippedShield->GetItemStructure().ItemDisplayName;
 	}
 
 	FString MapName = GetWorld()->GetMapName();
@@ -1382,10 +1428,10 @@ void AMain::LoadGame(bool SetPosition)
 			}
 		}
 
-		// else if no Weapon existed, destroy the Equipped Weapon, if any
+			// else if no Weapon existed, destroy the Equipped Weapon, if any
 		else
 		{
-			if(EquippedWeapon)
+			if (EquippedWeapon)
 			{
 				EquippedWeapon->Destroy();
 				SetEquippedWeapon(nullptr);
@@ -1464,57 +1510,57 @@ void AMain::LoadGameNoSwitch()
 	//InventoryComponent->PrepareInventory();
 
 	// Add the Items from the Saved Inventory to the Character's Inventory IF not empty
-		if (LoadGameInstance->Inventory.Num() > 0)
+	if (LoadGameInstance->Inventory.Num() > 0)
+	{
+		for (FSlotStructure Element : LoadGameInstance->Inventory)
 		{
-			for (FSlotStructure Element : LoadGameInstance->Inventory)
+			InventoryComponent->AddToInventory(Element);
+		}
+	}
+
+	// Load the Equipped Weapon if equipped
+	if (LoadGameInstance->CharacterStats.EquippedWeaponName != TEXT(""))
+	{
+		for (FSlotStructure Element : InventoryComponent->Inventory)
+		{
+			// Check if any Item's name matches with the EquippedWeapon's name
+			if (Element.ItemStructure.ItemDisplayName == LoadGameInstance->CharacterStats.EquippedWeaponName)
 			{
-				InventoryComponent->AddToInventory(Element);
+				// Spawn and Equip the Weapon.
+				AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Element.ItemStructure.ItemClass);
+				WeaponToEquip->UseItem(this);
+				break;
 			}
 		}
+	}
 
-		// Load the Equipped Weapon if equipped
-		if (LoadGameInstance->CharacterStats.EquippedWeaponName != TEXT(""))
+	// Load the Equipped Shield if equipped
+	if (LoadGameInstance->CharacterStats.EquippedShieldName != TEXT(""))
+	{
+		for (FSlotStructure Element : InventoryComponent->Inventory)
 		{
-			for (FSlotStructure Element : InventoryComponent->Inventory)
+			// Check if any Item's name matches with the EquippedShield's name
+			if (Element.ItemStructure.ItemDisplayName == LoadGameInstance->CharacterStats.EquippedShieldName)
 			{
-				// Check if any Item's name matches with the EquippedWeapon's name
-				if (Element.ItemStructure.ItemDisplayName == LoadGameInstance->CharacterStats.EquippedWeaponName)
-				{
-					// Spawn and Equip the Weapon.
-					AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Element.ItemStructure.ItemClass);
-					WeaponToEquip->UseItem(this);
-					break;
-				}
+				// Spawn and Equip the Shield.
+				AShield* ShieldToEquip = GetWorld()->SpawnActor<AShield>(Element.ItemStructure.ItemClass);
+				ShieldToEquip->UseItem(this);
+				break;
 			}
 		}
+	}
 
-		// Load the Equipped Shield if equipped
-		if (LoadGameInstance->CharacterStats.EquippedShieldName != TEXT(""))
-		{
-			for (FSlotStructure Element : InventoryComponent->Inventory)
-			{
-				// Check if any Item's name matches with the EquippedShield's name
-				if (Element.ItemStructure.ItemDisplayName == LoadGameInstance->CharacterStats.EquippedShieldName)
-				{
-					// Spawn and Equip the Shield.
-					AShield* ShieldToEquip = GetWorld()->SpawnActor<AShield>(Element.ItemStructure.ItemClass);
-					ShieldToEquip->UseItem(this);
-					break;
-				}
-			}
-		}
+	// Get the name of the current map/level
+	FString MapName = GetWorld()->GetMapName();
+	MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
 
-		// Get the name of the current map/level
-		FString MapName = GetWorld()->GetMapName();
-		MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
-		
-		// If map name is not empty AND it is the current map, set the position	of the Character.
-		if ((LoadGameInstance->CharacterStats.LevelName != "")
-			&& (LoadGameInstance->CharacterStats.LevelName == MapName))
-		{
-			SetActorLocation(LoadGameInstance->CharacterStats.Location);
-			SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
-		}
+	// If map name is not empty AND it is the current map, set the position	of the Character.
+	if ((LoadGameInstance->CharacterStats.LevelName != "")
+		&& (LoadGameInstance->CharacterStats.LevelName == MapName))
+	{
+		SetActorLocation(LoadGameInstance->CharacterStats.Location);
+		SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
+	}
 
 	SetMovementStatus(EMovementStatus::EMS_Normal);
 	GetMesh()->bPauseAnims = false;
@@ -1523,9 +1569,17 @@ void AMain::LoadGameNoSwitch()
 
 bool AMain::CanCheckStaminaStatus()
 {
-	return ((!GetMovementComponent()->IsFalling() && !bBlocking && !GetCharacterMovement()->IsCrouching()) && (
-		bShiftKeyDown && (bMovingForward ||
-			bMovingRight)));
+	UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+
+	if (MainAnimInstance)
+	{
+		return ((!GetMovementComponent()->IsFalling()
+				&& !bBlocking
+				&& !GetCharacterMovement()->IsCrouching())
+			&& (bShiftKeyDown
+				&& (bMovingForward && MainAnimInstance->GetSpeedForward() > 0.0f)));
+	}
+	return false;
 }
 
 /**
@@ -1535,11 +1589,11 @@ bool AMain::CanCheckStaminaStatus()
 void AMain::IdleEnd(int32 PlayerStatusNo)
 {
 	// If the HUD is currently visible, remove it
-	if(MainPlayerController->bHUDVisible)
+	if (MainPlayerController->IsHUDVisible())
 	{
 		MainPlayerController->HideHUD();
 	}
-	
+
 	// If Character was in Original Idle state, play an Idle Animation.
 	if (IdleAnimSlot == 0)
 	{                               // [0 -> NumberOfIdleAnims - 1]
@@ -1558,21 +1612,32 @@ void AMain::IdleEnd(int32 PlayerStatusNo)
 	*/
 void AMain::SpawnHitParticles(AEnemy* DamageCauser)
 {
-	UE_LOG(LogTemp, Warning, TEXT("BEFORE ENEMY ATTACK SECTION = %i"), DamageCauser->AttackSection);
-
-	DamageCauser->AttackSection = FMath::CeilToFloat(static_cast<float>(DamageCauser->AttackSection) / 2.0f);
-
-	UE_LOG(LogTemp, Warning, TEXT("Socket name = %s"), *(HitSocketNames[DamageCauser->AttackSection - 1].ToString()));
-
-	// Array indexes start at 0
-	const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(HitSocketNames[DamageCauser->AttackSection - 1]);
-
-	if (TipSocket)
+	if (HitParticles)
 	{
-		FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, SocketLocation,
-		                                         FRotator(0.0f), true);
+		UE_LOG(LogTemp, Warning, TEXT("BEFORE ENEMY ATTACK SECTION = %i"), DamageCauser->GetEnemyAttackSection());
+
+		const int32 AttackSection =
+			FMath::CeilToFloat(static_cast<float>(DamageCauser->GetEnemyAttackSection()) / 2.0f);
+
+		UE_LOG(LogTemp, Warning, TEXT("After ENEMY ATTACK SECTION = %i"), AttackSection);
+
+		UE_LOG(LogTemp, Warning, TEXT("Socket name = %s"), *(HitSocketNames[AttackSection - 1].ToString()));
+
+		// Array indexes start at 0
+		const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName(HitSocketNames[AttackSection - 1]);
+
+		if (TipSocket)
+		{
+			FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, SocketLocation,
+			                                         FRotator(0.0f), true);
+		}
 	}
+}
+
+void AMain::PlayHitSound()
+{
+	UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation(), FRotator(0, 0, 0));
 }
 
 void AMain::Footstep()
@@ -1584,7 +1649,7 @@ void AMain::Footstep()
 	// Hit result
 	FHitResult OutHit;
 
-	
+
 	FCollisionQueryParams CollisionParams;
 
 	// Ignore the Character during the Line-trace
@@ -1592,49 +1657,55 @@ void AMain::Footstep()
 
 	// Make sure the Line-trace returns the Physical Material of the object it hits
 	CollisionParams.bReturnPhysicalMaterial = true;
-	
+
 	// Line-trace from the Character to the ground
-	bool Success = GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECollisionChannel::ECC_Visibility, CollisionParams);
+	bool Success = GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, CollisionParams);
 
 	// If the line-trace was successful
-	if(Success)
+	if (Success)
 	{
 		EPhysicalMaterials PhysicalMaterial;
 
 		// Find out the name of the Physical Material that the line-trace hit
 		UObject* PhysMatObject = Cast<UObject>(OutHit.PhysMaterial.Get());
 
-		if(PhysMatObject){
-
+		if (PhysMatObject)
+		{
 			FName PhysMatObjectName = PhysMatObject->GetFName();
-			
+
 			// Assign the EPhysicalMaterials enum value accordingly
-			if(PhysMatObjectName == "DefaultPhysicalMaterial"){
-				PhysicalMaterial = EPhysicalMaterials::EPM_Land;
+			if (PhysMatObjectName == "DefaultPhysicalMaterial" || PhysMatObjectName == "PhysicalMaterial_NormalLand")
+			{
+				PhysicalMaterial = EPhysicalMaterials::EPM_NormalLand;
 			}
 
-			else if(PhysMatObjectName == "PhysicalMaterial_Land"){
-				PhysicalMaterial = EPhysicalMaterials::EPM_Land;
+			else if (PhysMatObjectName == "PhysicalMaterial_GrassyLand")
+			{
+				PhysicalMaterial = EPhysicalMaterials::EPM_GrassyLand;
 			}
 
-			else if(PhysMatObjectName == "PhysicalMaterial_Stone"){
+			else if (PhysMatObjectName == "PhysicalMaterial_Stone")
+			{
 				PhysicalMaterial = EPhysicalMaterials::EPM_Stone;
 			}
 
-			else if(PhysMatObjectName == "PhysicalMaterial_Wood"){
+			else if (PhysMatObjectName == "PhysicalMaterial_Wood")
+			{
 				PhysicalMaterial = EPhysicalMaterials::EPM_Wood;
 			}
 
-			else if(PhysMatObjectName == "PhysicalMaterial_Water"){
+			else if (PhysMatObjectName == "PhysicalMaterial_Water")
+			{
 				PhysicalMaterial = EPhysicalMaterials::EPM_Water;
 			}
 
-			else{
-				PhysicalMaterial = EPhysicalMaterials::EPM_Land;
-			} 			
+			else
+			{
+				PhysicalMaterial = EPhysicalMaterials::EPM_NormalLand;
+			}
 
 			// Play the sound
-			PlayFootstepSound(PhysicalMaterial, OutHit.ImpactPoint);	
+			PlayFootstepSound(PhysicalMaterial, OutHit.ImpactPoint);
 
 			UE_LOG(LogTemp, Warning, TEXT("Material Name: %s"), *OutHit.PhysMaterial.Get()->GetFName().ToString());
 		}
@@ -1643,8 +1714,7 @@ void AMain::Footstep()
 
 void AMain::PlayFootstepSound(EPhysicalMaterials& PhysicalMaterial, FVector& LocationToPlayAt)
 {
-	//USoundCue* SoundToPlay;
-
+	// Get the integer value of the enum variable
 	const int32 PhysicalMaterialInt = static_cast<int32>(PhysicalMaterial);
 
 	/**
@@ -1659,7 +1729,8 @@ void AMain::PlayFootstepSound(EPhysicalMaterials& PhysicalMaterial, FVector& Loc
 	 * {3} - Water - [15 -> 19]
 	 */
 
-	int32 RandIndex = FMath::RandRange(NumberOfFootstepSounds * PhysicalMaterialInt, (NumberOfFootstepSounds * (PhysicalMaterialInt + 1) - 1));
+	int32 RandIndex = FMath::RandRange(NumberOfFootstepSounds * PhysicalMaterialInt,
+	                                   (NumberOfFootstepSounds * (PhysicalMaterialInt + 1) - 1));
 
 	if (MovementStatus == EMovementStatus::EMS_Normal)
 	{

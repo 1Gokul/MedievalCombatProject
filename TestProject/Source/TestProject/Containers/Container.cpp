@@ -60,40 +60,41 @@ void AContainer::Interact(AActor* Interacter)
 	AMain* Main = Cast<AMain>(Interacter);
 
 	// Display this Container's Inventory
-	Main->MainPlayerController->ToggleInventoryMenu(InventoryComponent);
+	Main->GetMainPlayerController()->ToggleInventoryMenu(InventoryComponent);
 }
 
 void AContainer::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                                const FHitResult& SweepResult)
 {
 	// Check if the OtherActor is the Character
 	AMain* Main = Cast<AMain>(OtherActor);
 
-	if(Main)
+	if (Main)
 	{
 		// If it is, display the Search Prompt.
-		if(Main->MainPlayerController)
+		if (Main->GetMainPlayerController())
 		{
 			FString ItemName = InventoryComponent->InventoryName;
 			FName SearchText("Search");
-			
-			Main->MainPlayerController->DisplaySearchPrompt(ItemName, SearchText);
+
+			Main->GetMainPlayerController()->DisplaySearchPrompt(ItemName, SearchText);
 		}
 	}
 }
 
 void AContainer::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{  	
+{
 	// Check if the OtherActor is the Character
 	AMain* Main = Cast<AMain>(OtherActor);
 
-	if(Main)
+	if (Main)
 	{
 		// If it is, display the Search Prompt.
-		if(Main->MainPlayerController)
-		{			
-			Main->MainPlayerController->RemoveSearchPrompt();
+		if (Main->GetMainPlayerController())
+		{
+			Main->GetMainPlayerController()->RemoveSearchPrompt();
 		}
 	}
 }

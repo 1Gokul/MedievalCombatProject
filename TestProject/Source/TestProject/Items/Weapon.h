@@ -16,6 +16,16 @@ enum class EWeaponState : uint8
 	EWS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+	EWT_OneHandedMelee UMETA(DisplayName = "OneHanded_Melee"),
+	EWT_TwoHandedMelee UMETA(DisplayName = "TwoHanded_Melee"),
+	EWT_Bow UMETA(DisplayName = "Bow"),
+
+	EWT_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 /**
  * 
  */
@@ -28,53 +38,20 @@ public:
 
 	AWeapon();
 
+
+protected:
+
+	void BeginPlay() override;
+
+
 	UPROPERTY(EditDefaultsOnly, Category = "SavedData")
 	FString Name;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponProperties | Enums")
 	EWeaponState WeaponState;
 
-	/** To choose if the weapon's particle effects should show even after equipping */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Particles")
-	bool bWeaponParticles;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Sound")
-	class USoundCue* OnEquipSound;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Sound")
-	USoundCue* OnSheathSound;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Sound")
-	TArray<USoundCue*> SwingSounds;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skeletal Mesh")
-	class USkeletalMeshComponent* SkeletalMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items | Combat")
-	class UBoxComponent* CombatCollision;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Combat")
-	float Damage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TSubclassOf<UDamageType> DamageTypeClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	AController* WeaponInstigator;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Sound")
-	USoundCue* BlockSound;
-
-	/** Particles emitted when the weapon gets hit */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Block")
-	class UParticleSystem* HitParticles;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | Block")
-	float BlockStaminaCost;
-
-	FName HitSocketName;
-
-	int32 MainAttackSection;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponProperties | Enums")
+	EWeaponType WeaponType = EWeaponType::EWT_OneHandedMelee;
 
 	/**If true, the Player will treat the weapon as two handed.
 	 * No Shield can be equipped if the EquippedWeapon is Two-Handed.
@@ -82,18 +59,45 @@ public:
 	 * Animations and Blendspaces will be changed also.
 	 * Will be set in the Weapon's Blueprint.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Items | TwoHanded")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties | Combat")
 	bool bIsTwoHanded;
 
-	//Name of the socket the weapon will get attached to when sheathed
+	/** To choose if the weapon's particle effects should show even after equipping */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties | Particles")
+	bool bWeaponParticles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties | Sounds")
+	class USoundCue* OnEquipSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties | Sounds")
+	USoundCue* OnSheathSound;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skeletal Mesh")
+	class USkeletalMeshComponent* SkeletalMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties | Combat")
+	float Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WeaponProperties | Combat")
+	TSubclassOf<UDamageType> DamageTypeClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponProperties | Combat")
+	AController* WeaponInstigator;
+
+	// Name of the socket the weapon will get attached to when sheathed
 	FName SheathSocketName;
 
-	//Name of the socket the weapon will get attached to when drawn
+	// Name of the socket the weapon will get attached to when drawn
 	FName HandSocketName;
 
-protected:
+	// Prefix to be added to the name of the Animation to be played in the Combat Montage.
+	FString AttackAnimPrefix;
 
-	void BeginPlay() override;
+	// Name of the Sheath Animation to be played in the UpperBody Montage.
+	FName SheathAnimName;
+
+	// Name of the Draw Animation to be played in the UpperBody Montage.
+	FName DrawAnimName;
 
 public:
 
@@ -107,26 +111,6 @@ public:
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	                  int32 OtherBodyIndex) override;
 
-	/** Below two functions are similar to the above OnOverlapBegin and End,
-	*	but they are not overriden as they are for the Combat Collision Box 
-	*	which is not a part of the parent Item class. */
-
-	/**Called if a Combat Overlap Event starts. */
-	UFUNCTION()
-	void CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	                          UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-	                          const FHitResult& SweepResult);
-
-	/** Called when the Combat Overlap Event ends. */
-	UFUNCTION()
-	void CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	                        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	UFUNCTION(BlueprintCallable)
-	void ActivateCollision();
-
-	UFUNCTION(BlueprintCallable)
-	void DeactivateCollision();
 
 	void Equip(class AMain* Char);
 
@@ -136,9 +120,30 @@ public:
 	//UFUNCTION(BlueprintCallable)
 	//void Unsheathe(AMain* Char);
 
-	FORCEINLINE void SetWeaponState(EWeaponState State) { WeaponState = State; }
+	// getters
+
+	FORCEINLINE bool IsTwoHanded() const { return bIsTwoHanded; }
 
 	FORCEINLINE EWeaponState GetWeaponState() { return WeaponState; }
 
+	FORCEINLINE FName GetSheathSocketName() const { return SheathSocketName; }
+
+	FORCEINLINE FName GetHandSocketName() const { return HandSocketName; }
+
+	FORCEINLINE FString GetAttackAnimPrefix() const { return AttackAnimPrefix; }
+
+	FORCEINLINE FName GetSheathAnimName() const { return SheathAnimName; }
+
+	FORCEINLINE FName GetDrawAnimName() const { return DrawAnimName; }
+
+	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
+
+	// setters
+
+	FORCEINLINE void SetWeaponState(EWeaponState State) { WeaponState = State; }
+
 	FORCEINLINE void SetInstigator(AController* Weapon_Instigator) { WeaponInstigator = Weapon_Instigator; }
+
+	void PlaySheathSound() const;
+	void PlayDrawSound() const;
 };

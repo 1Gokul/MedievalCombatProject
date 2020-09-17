@@ -23,6 +23,22 @@ class TESTPROJECT_API AEnemy : public ACharacter
 {
 	GENERATED_BODY()
 
+	/** Section Number of the Enemy's Anim Montage that will be played.
+	Used for determining what Reaction Section of the Character's Anim Montage will be played
+	if the character is hit. */
+	int32 AttackSection;
+
+	bool bHasValidTarget;
+
+	bool bInterpToEnemy;
+
+	float InterpSpeed;
+
+	FTimerHandle AttackTimer;
+
+
+	FTimerHandle DeathTimer;
+
 public:
 	// Sets default values for this character's properties
 	AEnemy();
@@ -95,21 +111,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bAttacking;
 
-	/** Section Number of the Enemy's Anim Montage that will be played.
-		Used for determining what Reaction Section of the Character's Anim Montage will be played
-		if the character is hit. */
-	int32 AttackSection;
-
-	bool bHasValidTarget;
-
-	bool bInterpToEnemy;
-
-	float InterpSpeed;
-
-	FTimerHandle AttackTimer;
-
-
-	FTimerHandle DeathTimer;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	float DeathDelay;
@@ -220,4 +221,8 @@ public:
 
 	//Play Animation when hit
 	void Impact(int32 Section);
+
+	void SetHasValidTarget(bool HasValidTarget) { bHasValidTarget = HasValidTarget; }
+
+	FORCEINLINE int32 GetEnemyAttackSection() const { return AttackSection; };
 };
