@@ -295,7 +295,7 @@ void AEnemy::InflictDamageOnMain(AMain* Main, bool bHitFromBehind)
 	}
 
 	//In case the Player's attack was interrupted
-	Main->SetbAttacking(false);
+	Main->SetIsAttacking(false);
 
 	Main->SetbInterpToEnemy(false);
 }

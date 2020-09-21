@@ -31,6 +31,11 @@ void UMainAnimInstance::UpdateAnimationProperties()
 		FVector LateralSpeed = FVector(Speed.X, Speed.Y, 0.0f);
 		MovementSpeed = LateralSpeed.Size();
 
+		FVector VelocityTemp = Pawn->GetVelocity();
+		VelocityTemp.Normalize();
+
+		Direction = VelocityTemp.Size();
+
 		if (MovementSpeed == 0.0f)
 		{
 			if (Pawn->bUseControllerRotationYaw)Pawn->bUseControllerRotationYaw = false;

@@ -23,14 +23,21 @@ public:
 	UFUNCTION()
 	void BowChargeTimelineProgress(float Value);
 
+	// Gets the Character ready to shoot; increases the firing power/charge as the RMB is held down.
 	UFUNCTION()
 	void StartBowCharge();
 
+	// Returns the Character back to a normal state from the Ready state. Reduce the firing power/charge back to zero.
 	UFUNCTION()
 	void EndBowCharge();
 
+	// Stops charging; called after the bow has finished charging.
 	UFUNCTION()
 	void StopBowCharge();
+
+	// Called in BP so that the arrow gets attached to the Character's hand at the right moment in the "Arrow Draw" animation.
+	UFUNCTION(BlueprintCallable)
+	void TimedArrowDraw(AMain* Main);
 
 
 protected:

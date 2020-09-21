@@ -127,6 +127,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 	bool bBlocking;
 
+	// States if the Character is currently aiming the Bow or not
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
+	bool bIsAimingBow;
+
 	/** Anim Montage for Attacks*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* CombatMontage;
@@ -261,8 +265,8 @@ private:
 	/** C key button */
 	bool bCKeyDown;
 
-	bool bAttacking;
-
+	// States if the Character is currently performing a Melee Attack or not.
+	bool bIsMeleeAttacking;
 
 	/** Sections of the Combat Montage that will play when the Player attacks. */
 	int32 AttackComboSection;
@@ -379,6 +383,10 @@ public:
 	void CKeyUp();
 	void CKeyDown();
 
+	void CheckPlayerStatus();
+	
+	void CheckStaminaStatus(float DeltaTime);
+
 
 	/** Make the camera smoothly center back to its position*/
 	UFUNCTION(BlueprintImplementableEvent)
@@ -396,7 +404,7 @@ public:
 
 	// Smoothly move the camera away from the Character.
 	UFUNCTION(BlueprintImplementableEvent)
-	void CombatModeCameraZoomOut();
+	void CombatModeCameraZoomOut(const FVector& FinalPosition);
 	// Smoothly move the camera towards the Character.
 	UFUNCTION(BlueprintImplementableEvent)
 	void NormalModeCameraZoomIn();
@@ -412,20 +420,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Crouching")
 	void CrouchEnd();
 
-	void CheckPlayerStatus();
-	void CheckStaminaStatus(float DeltaTime);
 
 	void LeaveCombatMode();
 
-	// Called in BP so that the weapon gets attached to the Sheath at the right moment in the Sheathe animation.
-	UFUNCTION(BlueprintCallable)
-	void TimedSheathe();
-
 	void EnterCombatMode();
 
-	// Called in BP so that the weapon gets attached to the hand at the right moment in the Draw animation.
+	// Make the camera smoothly zoom in to the right of the Character when aiming with the bow
+	UFUNCTION(BlueprintImplementableEvent, Category = "Bow")
+	void BowAimingCameraZoomIn();
+
+	// Make the camera smoothly zoom out to its original position.
+	UFUNCTION(BlueprintImplementableEvent, Category = "Bow")
+	void BowAimingCameraZoomOut();
+	
+	void ReloadBow();
+
+	// Fire an arrow from the Bow.
+	void BowAttack();
+
+	// Called from an Anim Notify at the end of the Bow Firing Animation.
+	void BowAttackEnd();
+
+	// Sets bIsAimingBow to true. Called by an Anim Notify at the end of the "Drawing Arrow" animation.
 	UFUNCTION(BlueprintCallable)
-	void TimedDraw();
+	void StartAimingBow();
 
 	/** Set bInterpToEnemy
 	*	@param Interp true or false depending on proximity to the Enemy
@@ -434,12 +452,12 @@ public:
 
 	//int32 GetRightHandAttackSection();
 
-	void PlayMeleeAttack(int32 Section);
-
 	UFUNCTION()
 	void ResetMeleeAttackComboSection();
 
 	void MeleeAttack();
+
+	void PlayMeleeAttack(int32 Section);
 
 	UFUNCTION(BlueprintCallable)
 	void MeleeAttackEnd();
@@ -494,7 +512,7 @@ public:
 
 	FORCEINLINE void SetbHasCombatTarget(bool HasTarget) { bHasCombatTarget = HasTarget; }
 
-	FORCEINLINE void SetbAttacking(bool Attacking) { bAttacking = Attacking; }
+	void SetIsAttacking(bool Attacking);
 
 	FORCEINLINE void SetbInterpToEnemy(bool InterpToEnemy) { bInterpToEnemy = InterpToEnemy; }
 
@@ -592,5 +610,5 @@ public:
 
 	FORCEINLINE bool GetInCombatMode() const { return bInCombatMode; }
 
-	FORCEINLINE bool GetbAttacking() const { return bAttacking; }
+	FORCEINLINE bool GetIsAttacking() const { return (bIsMeleeAttacking || bIsAimingBow); }
 };

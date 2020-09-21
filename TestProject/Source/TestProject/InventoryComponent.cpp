@@ -205,7 +205,7 @@ bool UInventoryComponent::ShouldUnequipWeaponOrShield(TSubclassOf<AItem> ItemToC
 
 		Temp->Destroy();
 
-		if (Main->GetbAttacking())Main->SetbAttacking(false);
+		if (Main->GetIsAttacking())Main->SetIsAttacking(false);
 		if (Main->GetbIsWeaponDrawn())Main->SetbIsWeaponDrawn(false);
 
 		return true;

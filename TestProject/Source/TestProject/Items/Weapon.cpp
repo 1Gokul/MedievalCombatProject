@@ -71,7 +71,7 @@ bool AWeapon::UseItem(AMain* Main)
 	}
 
 	// Attach Weapon to Sheath Socket.
-	Main->TimedSheathe();
+	TimedSheathe(Main);
 
 	// Set bIsWeaponDrawn as false as the Weapon is sheathed.
 	Main->SetbIsWeaponDrawn(false);
@@ -202,3 +202,27 @@ void AWeapon::PlayDrawSound() const
 //		}
 //	}
 //}
+
+void AWeapon::TimedDraw(AMain* Main)
+{
+	SetInstigator(nullptr);
+
+	const USkeletalMeshSocket* RightHandSocket = Main->GetMesh()->GetSocketByName(GetHandSocketName());
+
+	if (RightHandSocket)
+	{
+		RightHandSocket->AttachActor(this, Main->GetMesh());
+	}
+}
+
+void AWeapon::TimedSheathe(AMain* Main)
+{
+	SetInstigator(nullptr);
+
+	const USkeletalMeshSocket* SheathSocket = Main->GetMesh()->GetSocketByName(GetSheathSocketName());
+
+	if (SheathSocket)
+	{
+		SheathSocket->AttachActor(this, Main->GetMesh());
+	}
+}

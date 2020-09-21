@@ -2,6 +2,9 @@
 
 
 #include "Bow.h"
+#include "Arrow.h"
+#include "Main.h"
+#include "Kismet/GameplayStatics.h"
 
 ABow::ABow()
 {
@@ -20,15 +23,39 @@ void ABow::BowChargeTimelineProgress(float Value)
 
 void ABow::StartBowCharge()
 {
+	if (Arrow)
+	{
+		CurveTimeline.Play();
+	}
 }
 
 void ABow::EndBowCharge()
 {
+	if (Arrow)
+	{
+		CurveTimeline.Reverse();
+	}
 }
 
 void ABow::StopBowCharge()
 {
+	CurveTimeline.Stop();
+
+	// Set the Charge value to the starting value
+	CurveTimeline.SetNewTime(0.0f);
+
 	bIsBowCharging = false;
+}
+
+void ABow::TimedArrowDraw(AMain* Main)
+{
+	Arrow = Cast<AArrow>(GetWorld()->SpawnActor(AArrow::StaticClass()));
+
+
+	AttachToComponent(Main->GetMesh(),
+	                  FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget,
+	                                            EAttachmentRule::KeepWorld, true),
+	                  FName("ArrowAttachSocket"));
 }
 
 void ABow::BeginPlay()
@@ -47,7 +74,7 @@ void ABow::BeginPlay()
 		FOnTimelineEventStatic TimelineFinishedEvent;
 
 		TimelineProgress.BindUFunction(this, FName("BowChargeTimelineProgress"));
-		TimelineFinishedEvent.BindUFunction(this, FName("StopBowCharge"));
+		// TimelineFinishedEvent.BindUFunction(this, FName("StopBowCharge"));
 		CurveTimeline.AddInterpFloat(CurveFloat, TimelineProgress);
 		CurveTimeline.SetTimelineLength(1.50f);
 	}

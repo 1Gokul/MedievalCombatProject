@@ -146,4 +146,12 @@ public:
 
 	void PlaySheathSound() const;
 	void PlayDrawSound() const;
+
+	// Called in BP so that the weapon gets attached to the hand at the right moment in the Draw animation.
+	UFUNCTION(BlueprintCallable)
+	void TimedDraw(AMain* Main);
+
+	// Called in BP so that the weapon gets attached to the Sheath at the right moment in the Sheathe animation.
+	UFUNCTION(BlueprintCallable)
+	void TimedSheathe(AMain* Main);
 };

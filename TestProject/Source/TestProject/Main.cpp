@@ -95,7 +95,8 @@ AMain::AMain()
 	bTabDown = false;
 	bEKeyDown = false;
 	bInCombatMode = false;
-	bAttacking = false;
+	bIsMeleeAttacking = false;
+	bIsAimingBow = false;
 	bBlocking = false;
 	bCrouched = false;
 	bHasCombatTarget = false;
@@ -166,6 +167,510 @@ void AMain::BeginPlay()
 	// Display the HUD
 	MainPlayerController->DisplayHUD();
 }
+
+//  Called every frame
+void AMain::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (MovementStatus == EMovementStatus::EMS_Dead)return;
+
+	CheckPlayerStatus();
+
+	CheckStaminaStatus(DeltaTime);
+
+	if (bInterpToEnemy && CombatTarget)
+	{
+		const FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
+		const FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
+
+		// Rotate to be directly facing the current Combat Target.
+		SetActorRotation(InterpRotation);
+	}
+
+	if (CombatTarget)
+	{
+		CombatTargetLocation = CombatTarget->GetActorLocation();
+
+		if (MainPlayerController)
+		{
+			MainPlayerController->SetEnemyLocation(CombatTargetLocation);
+		}
+	}
+
+	// If IdleTimer is not active and Player is not crouched
+	if (!GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle) && !bCrouched)
+	{
+		// If an Idle Animation is not already playing AND the Player is not moving
+		if (IdleAnimSlot == 0
+			&& (Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance())->GetMovementSpeed() == 0.0f))
+		{
+			// Start the Timer and set it for IdleTimeLimit seconds.
+			GetWorldTimerManager().SetTimer(IdleAnimTimerHandle, TimerDel, IdleTimeLimit, false);
+		}
+	}
+}
+
+//  Called to bind functionality to input
+void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMain::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+
+	PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &AMain::LMBDown);
+	PlayerInputComponent->BindAction("LMB", IE_Released, this, &AMain::LMBUp);
+
+	PlayerInputComponent->BindAction("RMB", IE_Pressed, this, &AMain::RMBDown);
+	PlayerInputComponent->BindAction("RMB", IE_Released, this, &AMain::RMBUp);
+
+	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &AMain::ESCDown).bExecuteWhenPaused = true;
+	PlayerInputComponent->BindAction("ESC", IE_Released, this, &AMain::ESCUp).bExecuteWhenPaused = true;
+
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
+
+	PlayerInputComponent->BindAxis("MoveForward", this, &AMain::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &AMain::MoveRight);
+
+
+	PlayerInputComponent->BindAxis("Turn", this, &AMain::Turn);
+	PlayerInputComponent->BindAxis("LookUp", this, &AMain::LookUp);
+	PlayerInputComponent->BindAxis("TurnRate", this, &AMain::TurnAtRate);
+	PlayerInputComponent->BindAxis("LookUpRate", this, &AMain::LookUpAtRate);
+
+	PlayerInputComponent->BindAction("CombatMode", IE_Pressed, this, &AMain::RKeyDown);
+	PlayerInputComponent->BindAction("CombatMode", IE_Released, this, &AMain::RKeyUp);
+
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AMain::CtrlDown);
+	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AMain::CtrlUp);
+
+	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AMain::TabDown).bExecuteWhenPaused = true;
+	PlayerInputComponent->BindAction("Inventory", IE_Released, this, &AMain::TabUp).bExecuteWhenPaused = true;
+
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMain::EKeyDown).bExecuteWhenPaused = true;
+	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMain::EKeyUp).bExecuteWhenPaused = true;
+
+	PlayerInputComponent->BindAction("ResetCamera", IE_Pressed, this, &AMain::CKeyDown);
+	PlayerInputComponent->BindAction("ResetCamera", IE_Released, this, &AMain::CKeyUp);
+}
+
+bool AMain::bCanMove(float Value)
+{
+	if (MainPlayerController)
+	{
+		return (
+			(Value != 0.0f)		// If Value to move is 0
+			&& (!bIsMeleeAttacking)	// If Attacking
+			&& (MovementStatus != EMovementStatus::EMS_Dead)	// If not Dead
+			&& (!MainPlayerController->IsAnyMenuVisible())	// If Inventory Menu Visible
+		);
+	}
+	return false;
+}
+
+void AMain::ResetIdleTimer()
+{
+	// If the HUD is not currently visible, display it
+	if (!MainPlayerController->IsHUDVisible())
+	{
+		MainPlayerController->DisplayHUD();
+	}
+
+	// Reset the Idle Anim Slot
+	IdleAnimSlot = 0;
+
+	// Pause IdleAnimTimerHandle if Active
+	if (GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle))
+	{
+		GetWorldTimerManager().PauseTimer(IdleAnimTimerHandle);
+	}
+}
+
+void AMain::MoveForward(float Value)
+{
+	bMovingForward = false;
+
+	if (bCanMove(Value))
+	{
+		ResetIdleTimer();
+
+		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
+
+		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		AddMovementInput(Direction, Value);
+
+		/*if(bShiftKeyDown)
+		{
+			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+
+			if(MainAnimInstance)
+			{
+				AddActorLocalRotation(FRotator(0.0f, MainAnimInstance->GetMovementSpeed(), 0.0f));
+			}
+		}*/
+
+		bMovingForward = true;
+	}
+}
+
+
+void AMain::MoveRight(float Value)
+{
+	bMovingRight = false;
+
+	// If the Character can move AND is not sprinting(Because currently Strafing is not allowed while sprinting)
+	if (bCanMove(Value) && (MovementStatus != EMovementStatus::EMS_Sprinting))
+	{
+		ResetIdleTimer();
+
+		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
+
+		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		AddMovementInput(Direction, Value);
+
+		/*if(bShiftKeyDown)
+		{
+			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+
+			if(MainAnimInstance)
+			{
+				AddActorLocalRotation(FRotator(0.0f, MainAnimInstance->GetMovementSpeed(), 0.0f));
+			}
+		}*/
+
+		bMovingRight = true;
+	}
+}
+
+void AMain::Turn(float Value)
+{
+	if (bCanMove(Value))
+	{
+		AddControllerYawInput(Value);
+	}
+}
+
+void AMain::LookUp(float Value)
+{
+	if (bCanMove(Value))
+	{
+		AddControllerPitchInput(Value);
+	}
+}
+
+
+void AMain::TurnAtRate(float Rate)
+{
+	AddControllerYawInput(Rate * BaseTurnRate * (GetWorld()->GetDeltaSeconds()));
+}
+
+void AMain::LookUpAtRate(float Rate)
+{
+	AddControllerPitchInput(Rate * BaseLookUpRate * (GetWorld()->GetDeltaSeconds()));
+}
+
+void AMain::LMBUp()
+{
+	bLMBDown = false;
+
+	if(bIsAimingBow)
+	{
+		BowAttack();
+
+		BowAimingCameraZoomOut();
+
+		bIsAimingBow = false;
+	}
+}
+
+
+void AMain::LMBDown()
+{
+	bLMBDown = true;
+
+	ResetIdleTimer();
+
+	if (MovementStatus == EMovementStatus::EMS_Dead)return;
+
+	if (MainPlayerController)
+	{
+		if (MainPlayerController->IsPauseMenuVisible())return;
+	}
+
+
+	//// If Player is overlapping with an Item, they can equip it 
+	//if (ActiveOverlappingItem)
+	//{
+	//	// If the Item is a Weapon
+	//	AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
+	//	if (Weapon)
+	//	{
+	//		if (EquippedWeapon)
+	//		{
+	//			if (bIsWeaponDrawn)
+	//			{
+	//				OverlappingWeaponLocation = Weapon->GetActorLocation();
+
+	//				Weapon->Equip(this);
+	//				SetActiveOverlappingItem(nullptr);
+	//			}
+	//		}
+	//		else
+	//		{
+	//			OverlappingWeaponLocation = Weapon->GetActorLocation();
+
+	//			Weapon->Equip(this);
+	//			SetActiveOverlappingItem(nullptr);
+	//		}
+	//	}
+	//	else
+	//	{
+	//		AShield* Shield = Cast<AShield>(ActiveOverlappingItem);
+	//		if (Shield)
+	//		{
+	//			Shield->Equip(this);
+	//			SetActiveOverlappingItem(nullptr);
+	//		}
+	//	}
+	//}
+
+	/** if Player already has a weapon equipped AND
+	*	is not already blocking, perform an Attack.
+	*/
+	if (!bBlocking)
+	{
+		UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+		if (MainAnimInstance)
+		{
+			// If Player is not currently falling
+			if (!MainAnimInstance->IsInAir())
+			{
+				if (bInCombatMode)
+				{
+					// If the Weapon is a Bow
+					if (EquippedWeapon && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Bow)
+					{
+						ReloadBow();
+					}
+					// Else if the Weapon is a Melee Weapon
+					else
+					{
+						MeleeAttack();
+					}
+				}
+				else EnterCombatMode();
+			}
+		}
+	}
+}
+
+void AMain::RMBUp()
+{
+	bBlocking = false;
+	bRMBDown = false;
+
+	// GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+	// EquippedShield->DeactivateCollision();
+}
+
+void AMain::RMBDown()
+{
+	bRMBDown = true;
+
+	if (MovementStatus == EMovementStatus::EMS_Dead)return;
+
+	if (MainPlayerController)
+	{
+		if (MainPlayerController->IsPauseMenuVisible())return;
+	}
+
+	/** else if Player already has a shield equipped AND
+	*	is not already attacking, perform a Block.
+	*/
+	if (!bIsMeleeAttacking && MovementStatus != EMovementStatus::EMS_Dead)
+	{
+		ResetIdleTimer();
+
+		// Blocking should be performed only with a Shield or a Two-Handed Melee Weapon.
+		if ((EquippedWeapon && !EquippedShield && (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_TwoHandedMelee))
+			|| (EquippedShield))
+		{
+			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+			if (MainAnimInstance)
+			{
+				// If Player is not currently falling
+				if (!MainAnimInstance->IsInAir())
+				{
+					if (bInCombatMode)
+					{
+						if (!bBlocking)
+						{
+							bBlocking = true;
+						}
+					}
+					else
+					{
+						EnterCombatMode();
+					}
+				}
+			}
+		}
+	}
+}
+
+void AMain::ESCUp()
+{
+	bESCDown = false;
+}
+
+void AMain::ESCDown()
+{
+	bESCDown = true;
+
+
+	if (MainPlayerController)
+	{
+		// If a UI Widget (Other than the HUD) is not currently active, display the Pause menu.
+		if (!MainPlayerController->IsInventoryMenuVisible())
+		{
+			MainPlayerController->TogglePauseMenu();
+		}
+	}
+}
+
+void AMain::RKeyUp()
+{
+	bRKeyDown = false;
+}
+
+
+void AMain::RKeyDown()
+{
+	bRKeyDown = true;
+
+	ResetIdleTimer();
+
+	/** If already in Combat Mode, switch back to Normal Mode. */
+	if (bInCombatMode && !bBlocking)
+	{
+		LeaveCombatMode();
+	}
+
+		/** If in Normal Mode, switch to Combat Mode. */
+	else
+	{
+		EnterCombatMode();
+	}
+}
+
+void AMain::CtrlUp()
+{
+	bCtrlDown = false;
+}
+
+void AMain::CtrlDown()
+{
+	bCtrlDown = true;
+
+	ResetIdleTimer();
+
+	if (GetCharacterMovement()->IsCrouching())
+	{
+		bCrouched = false;
+
+		PlayerUnCrouch();
+
+		GetCharacterMovement()->bOrientRotationToMovement = false; // Character rotates to direction of input.
+
+		// GetCapsuleComponent()->SetCapsuleRadius(36.0);
+	}
+	else
+	{
+		bCrouched = true;
+
+		PlayerCrouch();
+
+		GetCharacterMovement()->bOrientRotationToMovement = true; // Character rotates to direction of input.
+
+		// GetCapsuleComponent()->SetCapsuleRadius(60.0);
+	}
+}
+
+void AMain::CrouchEnd()
+{
+	if (GetCharacterMovement()->IsCrouching())
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Crouch();
+	}
+}
+
+void AMain::TabUp()
+{
+	bTabDown = false;
+}
+
+void AMain::TabDown()
+{
+	bTabDown = true;
+
+	if (MainPlayerController)
+	{
+		// If a UI Widget (Other than the HUD) is not currently active, display the Inventory menu.
+		if (!MainPlayerController->IsPauseMenuVisible())
+		{
+			MainPlayerController->ToggleInventoryMenu(InventoryComponent);
+		}
+	}
+}
+
+void AMain::EKeyUp()
+{
+	bEKeyDown = false;
+}
+
+void AMain::EKeyDown()
+{
+	bEKeyDown = true;
+
+	ResetIdleTimer();
+
+	TArray<AActor*> OverlappingActors;
+
+	GetOverlappingActors(OverlappingActors, ActorFilter);
+
+	for (AActor* OverlappingActor : OverlappingActors)
+	{
+		//  if the OverlappingActor implements UInteractInterface
+		if (OverlappingActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
+		{
+			// Execute Interact()
+			Cast<IInteractInterface>(OverlappingActor)->Interact(this);
+
+			break;
+		}
+	}
+}
+
+void AMain::CKeyUp()
+{
+	bCKeyDown = false;
+}
+
+void AMain::CKeyDown()
+{
+	bCKeyDown = true;
+
+	CenterCamera(GetMesh()->GetComponentRotation().Add(0.0f, 90.0f, 0.0f));
+}
+
 
 void AMain::CheckPlayerStatus()
 {
@@ -317,383 +822,6 @@ void AMain::CheckStaminaStatus(float DeltaTime)
 	}
 }
 
-//  Called every frame
-void AMain::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	if (MovementStatus == EMovementStatus::EMS_Dead)return;
-
-	CheckPlayerStatus();
-
-	CheckStaminaStatus(DeltaTime);
-
-	if (bInterpToEnemy && CombatTarget)
-	{
-		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
-		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
-
-		// Rotate to be directly facing the current Combat Target.
-		SetActorRotation(InterpRotation);
-	}
-
-	if (CombatTarget)
-	{
-		CombatTargetLocation = CombatTarget->GetActorLocation();
-
-		if (MainPlayerController)
-		{
-			MainPlayerController->SetEnemyLocation(CombatTargetLocation);
-		}
-	}
-
-	// If IdleTimer is not active and Player is not crouched
-	if (!GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle) && !bCrouched)
-	{
-		// If an Idle Animation is not already playing AND the Player is not moving
-		if (IdleAnimSlot == 0
-			&& (Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance())->GetMovementSpeed() == 0.0f))
-		{
-			// Start the Timer and set it for IdleTimeLimit seconds.
-			GetWorldTimerManager().SetTimer(IdleAnimTimerHandle, TimerDel, IdleTimeLimit, false);
-		}
-	}
-}
-
-//  Called to bind functionality to input
-void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMain::Jump);
-	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-
-	PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &AMain::LMBDown);
-	PlayerInputComponent->BindAction("LMB", IE_Released, this, &AMain::LMBUp);
-
-	PlayerInputComponent->BindAction("RMB", IE_Pressed, this, &AMain::RMBDown);
-	PlayerInputComponent->BindAction("RMB", IE_Released, this, &AMain::RMBUp);
-
-	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &AMain::ESCDown).bExecuteWhenPaused = true;
-	PlayerInputComponent->BindAction("ESC", IE_Released, this, &AMain::ESCUp).bExecuteWhenPaused = true;
-
-	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
-	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
-
-	PlayerInputComponent->BindAxis("MoveForward", this, &AMain::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &AMain::MoveRight);
-
-
-	PlayerInputComponent->BindAxis("Turn", this, &AMain::Turn);
-	PlayerInputComponent->BindAxis("LookUp", this, &AMain::LookUp);
-	PlayerInputComponent->BindAxis("TurnRate", this, &AMain::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUpRate", this, &AMain::LookUpAtRate);
-
-	PlayerInputComponent->BindAction("CombatMode", IE_Pressed, this, &AMain::RKeyDown);
-	PlayerInputComponent->BindAction("CombatMode", IE_Released, this, &AMain::RKeyUp);
-
-	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AMain::CtrlDown);
-	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AMain::CtrlUp);
-
-	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AMain::TabDown).bExecuteWhenPaused = true;
-	PlayerInputComponent->BindAction("Inventory", IE_Released, this, &AMain::TabUp).bExecuteWhenPaused = true;
-
-	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMain::EKeyDown).bExecuteWhenPaused = true;
-	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMain::EKeyUp).bExecuteWhenPaused = true;
-
-	PlayerInputComponent->BindAction("ResetCamera", IE_Pressed, this, &AMain::CKeyDown);
-	PlayerInputComponent->BindAction("ResetCamera", IE_Released, this, &AMain::CKeyUp);
-}
-
-bool AMain::bCanMove(float Value)
-{
-	if (MainPlayerController)
-	{
-		return (
-			(Value != 0.0f)		// If Value to move is 0
-			&& (!bAttacking)	// If Attacking
-			&& (MovementStatus != EMovementStatus::EMS_Dead)	// If not Dead
-			&& (!MainPlayerController->IsAnyMenuVisible())	// If Inventory Menu Visible
-		);
-	}
-	return false;
-}
-
-void AMain::ResetIdleTimer()
-{
-	// If the HUD is not currently visible, display it
-	if (!MainPlayerController->IsHUDVisible())
-	{
-		MainPlayerController->DisplayHUD();
-	}
-
-	// Reset the Idle Anim Slot
-	IdleAnimSlot = 0;
-
-	// Pause IdleAnimTimerHandle if Active
-	if (GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle))
-	{
-		GetWorldTimerManager().PauseTimer(IdleAnimTimerHandle);
-	}
-}
-
-void AMain::MoveForward(float Value)
-{
-	bMovingForward = false;
-
-	if (bCanMove(Value))
-	{
-		ResetIdleTimer();
-
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
-
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		AddMovementInput(Direction, Value);
-
-		/*if(bShiftKeyDown)
-		{
-			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
-
-			if(MainAnimInstance)
-			{
-				AddActorLocalRotation(FRotator(0.0f, MainAnimInstance->GetMovementSpeed(), 0.0f));
-			}
-		}*/
-
-		bMovingForward = true;
-	}
-}
-
-
-void AMain::MoveRight(float Value)
-{
-	bMovingRight = false;
-
-	// If the Character can move AND is not sprinting(Because currently Strafing is not allowed while sprinting)
-	if (bCanMove(Value) && (MovementStatus != EMovementStatus::EMS_Sprinting))
-	{
-		ResetIdleTimer();
-
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
-
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		AddMovementInput(Direction, Value);
-
-		/*if(bShiftKeyDown)
-		{
-			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
-
-			if(MainAnimInstance)
-			{
-				AddActorLocalRotation(FRotator(0.0f, MainAnimInstance->GetMovementSpeed(), 0.0f));
-			}
-		}*/
-
-		bMovingRight = true;
-	}
-}
-
-void AMain::Turn(float Value)
-{
-	if (bCanMove(Value))
-	{
-		AddControllerYawInput(Value);
-	}
-}
-
-void AMain::LookUp(float Value)
-{
-	if (bCanMove(Value))
-	{
-		AddControllerPitchInput(Value);
-	}
-}
-
-
-void AMain::TurnAtRate(float Rate)
-{
-	AddControllerYawInput(Rate * BaseTurnRate * (GetWorld()->GetDeltaSeconds()));
-}
-
-void AMain::LookUpAtRate(float Rate)
-{
-	AddControllerPitchInput(Rate * BaseLookUpRate * (GetWorld()->GetDeltaSeconds()));
-}
-
-void AMain::LMBUp()
-{
-	bLMBDown = false;
-}
-
-void AMain::LMBDown()
-{
-	bLMBDown = true;
-
-	ResetIdleTimer();
-
-	if (MovementStatus == EMovementStatus::EMS_Dead)return;
-
-	if (MainPlayerController)
-	{
-		if (MainPlayerController->IsPauseMenuVisible())return;
-	}
-
-
-	//// If Player is overlapping with an Item, they can equip it 
-	//if (ActiveOverlappingItem)
-	//{
-	//	// If the Item is a Weapon
-	//	AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
-	//	if (Weapon)
-	//	{
-	//		if (EquippedWeapon)
-	//		{
-	//			if (bIsWeaponDrawn)
-	//			{
-	//				OverlappingWeaponLocation = Weapon->GetActorLocation();
-
-	//				Weapon->Equip(this);
-	//				SetActiveOverlappingItem(nullptr);
-	//			}
-	//		}
-	//		else
-	//		{
-	//			OverlappingWeaponLocation = Weapon->GetActorLocation();
-
-	//			Weapon->Equip(this);
-	//			SetActiveOverlappingItem(nullptr);
-	//		}
-	//	}
-	//	else
-	//	{
-	//		AShield* Shield = Cast<AShield>(ActiveOverlappingItem);
-	//		if (Shield)
-	//		{
-	//			Shield->Equip(this);
-	//			SetActiveOverlappingItem(nullptr);
-	//		}
-	//	}
-	//}
-
-	/** if Player already has a weapon equipped AND
-	*	is not already blocking, perform an Attack.
-	*/
-	if (!bBlocking)
-	{
-		UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
-		if (MainAnimInstance)
-		{
-			// If Player is not currently falling
-			if (!MainAnimInstance->IsInAir())
-			{
-				if (bInCombatMode)MeleeAttack();
-				else EnterCombatMode();
-			}
-		}
-	}
-}
-
-void AMain::RMBUp()
-{
-	bBlocking = false;
-	bRMBDown = false;
-
-	// GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
-	// EquippedShield->DeactivateCollision();
-}
-
-void AMain::RMBDown()
-{
-	bRMBDown = true;
-
-	if (MovementStatus == EMovementStatus::EMS_Dead)return;
-
-	if (MainPlayerController)
-	{
-		if (MainPlayerController->IsPauseMenuVisible())return;
-	}
-
-	/** else if Player already has a shield equipped AND
-	*	is not already attacking, perform a Block.
-	*/
-	if (!bAttacking && MovementStatus != EMovementStatus::EMS_Dead)
-	{
-		ResetIdleTimer();
-
-		// Blocking should be performed only with a Shield or a Two-Handed Melee Weapon.
-		if ((EquippedWeapon && !EquippedShield && (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_TwoHandedMelee))
-			|| (EquippedShield))
-		{
-			UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
-			if (MainAnimInstance)
-			{
-				// If Player is not currently falling
-				if (!MainAnimInstance->IsInAir())
-				{
-					if (bInCombatMode)
-					{
-						if (!bBlocking)
-						{
-							bBlocking = true;
-						}
-					}
-					else
-					{
-						CombatModeCameraZoomOut();
-						bInCombatMode = true;
-					}
-				}
-			}
-		}
-	}
-}
-
-void AMain::ESCUp()
-{
-	bESCDown = false;
-}
-
-void AMain::ESCDown()
-{
-	bESCDown = true;
-
-
-	if (MainPlayerController)
-	{
-		// If a UI Widget (Other than the HUD) is not currently active, display the Pause menu.
-		if (!MainPlayerController->IsInventoryMenuVisible())
-		{
-			MainPlayerController->TogglePauseMenu();
-		}
-	}
-}
-
-void AMain::RKeyUp()
-{
-	bRKeyDown = false;
-}
-
-
-void AMain::RKeyDown()
-{
-	bRKeyDown = true;
-
-	ResetIdleTimer();
-
-	/** If already in Combat Mode, switch back to Normal Mode. */
-	if (bInCombatMode && !bBlocking)
-	{
-		LeaveCombatMode();
-	}
-
-		/** If in Normal Mode, switch to Combat Mode. */
-	else
-	{
-		EnterCombatMode();
-	}
-}
 
 
 void AMain::LeaveCombatMode()
@@ -701,7 +829,7 @@ void AMain::LeaveCombatMode()
 	NormalModeCameraZoomIn();
 
 	bInCombatMode = false;
-	bAttacking = false;
+	SetIsAttacking(false);
 
 	// If a weapon is equipped, sheathe it.
 	if (bIsWeaponDrawn && EquippedWeapon)
@@ -723,28 +851,18 @@ void AMain::LeaveCombatMode()
 	}
 }
 
-void AMain::TimedSheathe()
-{
-	//AMeleeWeapon* MeleeWeapon = Cast<AMeleeWeapon>(EquippedWeapon);
-
-	if (EquippedWeapon)
-	{
-		//MeleeWeapon->DeactivateCollision();
-
-		EquippedWeapon->SetInstigator(nullptr);
-
-		const USkeletalMeshSocket* SheathSocket = GetMesh()->GetSocketByName(EquippedWeapon->GetSheathSocketName());
-
-		if (SheathSocket)
-		{
-			SheathSocket->AttachActor(EquippedWeapon, GetMesh());
-		}
-	}
-}
-
 void AMain::EnterCombatMode()
 {
-	CombatModeCameraZoomOut();
+	if(EquippedWeapon && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Bow)
+	{
+		CombatModeCameraZoomOut(FVector(150.0f, 0.0f, 80.0f));
+	}
+	else
+	{
+		CombatModeCameraZoomOut(FVector(300.0f, 0.0f, 100.0f));
+	}
+	
+	
 
 	bInCombatMode = true;
 
@@ -768,129 +886,82 @@ void AMain::EnterCombatMode()
 	}
 }
 
-void AMain::TimedDraw()
+void AMain::ReloadBow()
 {
-	if (EquippedWeapon)
+	BowAimingCameraZoomIn();
+						
+	UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+
+	if (MainAnimInstance)
 	{
-		EquippedWeapon->SetInstigator(nullptr);
+		MainAnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 
-		const USkeletalMeshSocket* RightHandSocket = GetMesh()->GetSocketByName(EquippedWeapon->GetHandSocketName());
-
-		if (RightHandSocket)
-		{
-			RightHandSocket->AttachActor(EquippedWeapon, GetMesh());
-		}
+		MainAnimInstance->Montage_JumpToSection(FName("DrawArrow"), UpperBodyMontage);
 	}
 }
 
-void AMain::CtrlUp()
+void AMain::BowAttack()
 {
-	bCtrlDown = false;
-}
+	UE_LOG(LogTemp, Warning, TEXT("BowAttack() has been called!"));
 
-void AMain::CtrlDown()
-{
-	bCtrlDown = true;
+	UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
 
-	ResetIdleTimer();
-
-	if (GetCharacterMovement()->IsCrouching())
+	if (MainAnimInstance)
 	{
-		bCrouched = false;
+		MainAnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
 
-		PlayerUnCrouch();
-
-		GetCharacterMovement()->bOrientRotationToMovement = false; // Character rotates to direction of input.
-
-		// GetCapsuleComponent()->SetCapsuleRadius(36.0);
-	}
-	else
-	{
-		bCrouched = true;
-
-		PlayerCrouch();
-
-		GetCharacterMovement()->bOrientRotationToMovement = true; // Character rotates to direction of input.
-
-		// GetCapsuleComponent()->SetCapsuleRadius(60.0);
+		MainAnimInstance->Montage_JumpToSection(FName("FireArrow"), UpperBodyMontage);
 	}
 }
 
-void AMain::CrouchEnd()
+void AMain::BowAttackEnd()
 {
-	if (GetCharacterMovement()->IsCrouching())
+	// If the Player is still holding the LMB down, attack again.
+	if(bLMBDown)
 	{
-		UnCrouch();
+		BowAttack();
 	}
 	else
 	{
-		Crouch();
+		BowAimingCameraZoomOut();
+		bIsAimingBow = false;
 	}
+	
 }
 
-void AMain::TabUp()
+void AMain::StartAimingBow()
 {
-	bTabDown = false;
-}
-
-void AMain::TabDown()
-{
-	bTabDown = true;
-
-	if (MainPlayerController)
-	{
-		// If a UI Widget (Other than the HUD) is not currently active, display the Inventory menu.
-		if (!MainPlayerController->IsPauseMenuVisible())
-		{
-			MainPlayerController->ToggleInventoryMenu(InventoryComponent);
-		}
-	}
-}
-
-void AMain::EKeyUp()
-{
-	bEKeyDown = false;
-}
-
-void AMain::EKeyDown()
-{
-	bEKeyDown = true;
-
-	ResetIdleTimer();
-
-	TArray<AActor*> OverlappingActors;
-
-	GetOverlappingActors(OverlappingActors, ActorFilter);
-
-	for (AActor* OverlappingActor : OverlappingActors)
-	{
-		//  if the OverlappingActor implements UInteractInterface
-		if (OverlappingActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
-		{
-			// Execute Interact()
-			Cast<IInteractInterface>(OverlappingActor)->Interact(this);
-
-			break;
-		}
-	}
-}
-
-void AMain::CKeyUp()
-{
-	bCKeyDown = false;
-}
-
-void AMain::CKeyDown()
-{
-	bCKeyDown = true;
-
-	CenterCamera(GetMesh()->GetComponentRotation().Add(0.0f, 90.0f, 0.0f));
+	bIsAimingBow = true;
 }
 
 
 void AMain::SetInterpToEnemy(bool Interp)
 {
 	bInterpToEnemy = Interp;
+}
+
+
+void AMain::ResetMeleeAttackComboSection()
+{
+	AttackComboSection = 0;
+}
+
+void AMain::MeleeAttack()
+{
+	ResetIdleTimer();
+
+	if (!bIsMeleeAttacking && (MovementStatus != EMovementStatus::EMS_Dead))
+	{
+		bIsMeleeAttacking = true;
+
+		SetInterpToEnemy(true);
+
+		/** AttackSection
+		 *  == 0 OR 1 -> Normal Attack
+		 *  == 2 -> Combo Attack
+		*/
+		PlayMeleeAttack((AttackComboSection++) % NumberOfMeleeAttacks);
+	}
 }
 
 
@@ -955,32 +1026,10 @@ void AMain::PlayMeleeAttack(int32 Section)
 	}
 }
 
-void AMain::ResetMeleeAttackComboSection()
-{
-	AttackComboSection = 0;
-}
-
-void AMain::MeleeAttack()
-{
-	ResetIdleTimer();
-
-	if (!bAttacking && (MovementStatus != EMovementStatus::EMS_Dead))
-	{
-		bAttacking = true;
-
-		SetInterpToEnemy(true);
-
-		/** AttackSection
-		 *  == 0 OR 1 -> Normal Attack
-		 *  == 2 -> Combo Attack
-		*/
-		PlayMeleeAttack((AttackComboSection++) % NumberOfMeleeAttacks);
-	}
-}
 
 void AMain::MeleeAttackEnd()
 {
-	bAttacking = false;
+	bIsMeleeAttacking = false;
 
 	SetInterpToEnemy(false);
 
@@ -991,7 +1040,7 @@ void AMain::MeleeAttackEnd()
 	GetWorldTimerManager().SetTimer(AttackTimerHandle, this, &AMain::ResetMeleeAttackComboSection,
 	                                AttackComboSectionResetTime);
 
-	// If Player is still holding LMBDown, attack again.
+	
 	if (bLMBDown)
 	{
 		GetWorldTimerManager().ClearTimer(AttackTimerHandle);
@@ -1098,6 +1147,11 @@ void AMain::PlayBlockImpactAnimation(int32 Section)
 	}
 }
 
+void AMain::SetIsAttacking(bool Attacking)
+{
+	if(bIsMeleeAttacking != Attacking)bIsMeleeAttacking = Attacking;
+	else if(bIsAimingBow != Attacking)bIsAimingBow = Attacking;
+}
 
 void AMain::Die()
 {
@@ -1252,7 +1306,7 @@ void AMain::Jump()
 		if (MainPlayerController->IsPauseMenuVisible())return;
 	}
 
-	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking) && (!bAttacking))
+	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking) && (!bIsMeleeAttacking))
 	{
 		ResetIdleTimer();
 
