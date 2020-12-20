@@ -377,7 +377,7 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 								// Character Weapon Block Impact Animation
 								Main->
 									PlayBlockImpactAnimation(
-										Section);  // +3 because first 3 attack sections are for shield blocking
+										Section); // +3 because first 3 attack sections are for shield blocking
 
 								// Play the MeleeWeapon's Block Sound 
 								MeleeWeapon->PlayBlockSound();
@@ -402,7 +402,8 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 			}
 
 			else
-			{	//If not blocking
+			{
+				//If not blocking
 				InflictDamageOnMain(Main, (bAngleCheck1 || bAngleCheck2));
 			}
 		}

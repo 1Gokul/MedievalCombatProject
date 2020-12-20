@@ -34,27 +34,36 @@ void UMainAnimInstance::UpdateAnimationProperties()
 		FVector VelocityTemp = Pawn->GetVelocity();
 		VelocityTemp.Normalize();
 
-		Direction = VelocityTemp.Size();
-
-		if (MovementSpeed == 0.0f)
-		{
-			if (Pawn->bUseControllerRotationYaw)Pawn->bUseControllerRotationYaw = false;
-		}
-		else
-		{
-			if (!Pawn->bUseControllerRotationYaw)Pawn->bUseControllerRotationYaw = true;
-		}
 
 		SpeedForward = FVector::DotProduct(Pawn->GetActorForwardVector(), Speed);
 		SpeedRight = FVector::DotProduct(Pawn->GetActorRightVector(), Speed);
 
-		// UE_LOG(LogTemp, Warning, TEXT("Character Direction: (X = %f, Y = %f)"), SpeedForward, SpeedRight);
 
-		bIsInAir = Pawn->GetMovementComponent()->IsFalling();
+		if (Main)
+		{
+			// ControlRotation = Main->GetMesh()->GetComponentRotation();
 
-		if (!Main)
+			if (/*Main->GetIsDrawingArrow() || */MovementSpeed != 0.0f)
+			{
+				Pawn->bUseControllerRotationYaw = true;
+			}
+			else
+			{
+				Pawn->bUseControllerRotationYaw = false;
+			}
+
+			if (Main->GetIsDrawingArrow() || Main->GetIsBowAimed())
+			{
+				Pawn->bUseControllerRotationYaw = true;
+			}
+		}
+		else
 		{
 			Main = Cast<AMain>(Pawn);
 		}
+
+		// UE_LOG(LogTemp, Warning, TEXT("Character Direction: (X = %f, Y = %f)"), SpeedForward, SpeedRight);
+
+		bIsInAir = Pawn->GetMovementComponent()->IsFalling();
 	}
 }

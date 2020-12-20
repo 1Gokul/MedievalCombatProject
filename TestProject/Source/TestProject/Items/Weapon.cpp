@@ -212,6 +212,8 @@ void AWeapon::TimedDraw(AMain* Main)
 	if (RightHandSocket)
 	{
 		RightHandSocket->AttachActor(this, Main->GetMesh());
+
+		Main->SetIsWeaponDrawn(true);
 	}
 }
 
@@ -224,5 +226,7 @@ void AWeapon::TimedSheathe(AMain* Main)
 	if (SheathSocket)
 	{
 		SheathSocket->AttachActor(this, Main->GetMesh());
+
+		Main->SetIsWeaponDrawn(false);
 	}
 }

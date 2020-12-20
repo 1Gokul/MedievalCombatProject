@@ -90,9 +90,9 @@ bool UInventoryComponent::AddToInventory(FSlotStructure ContentToAdd)
 		for (FSlotStructure& Element : Inventory)
 		{
 			if (
-				(Element.ItemStructure.ItemClass == ContentToAdd.ItemStructure.ItemClass)	// If the Item class matches
+				(Element.ItemStructure.ItemClass == ContentToAdd.ItemStructure.ItemClass) // If the Item class matches
 				&& (Element.Quantity < ContentToAdd.ItemStructure.MaxStackSize
-				)		// If the stack is not completely filled
+				) // If the stack is not completely filled
 			)
 			{
 				// Find the location of the Element

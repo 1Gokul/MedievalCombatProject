@@ -37,6 +37,7 @@ bool AShield::UseItem(AMain* Main)
 		{
 			Main->GetEquippedWeapon()->Destroy();
 			Main->SetEquippedWeapon(nullptr);
+			Main->SetIsWeaponDrawn(false);
 		}
 	}
 	CollisionVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);

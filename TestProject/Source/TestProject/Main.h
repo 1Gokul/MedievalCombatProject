@@ -11,7 +11,8 @@ enum class EPlayerStatus : uint8
 {
 	EPS_UnarmedIdle UMETA(DisplayName = "UnarmedIdle"),
 	EPS_CombatUnarmed UMETA(DisplayName = "CombatUnarmed"),
-	EPS_ShieldUnarmed UMETA(DisplayName = "ShieldUnarmed"),	// todo remove this; merge with CombatArmed
+	EPS_ShieldUnarmed UMETA(DisplayName = "ShieldUnarmed"),
+	// todo remove this; merge with CombatArmed
 
 	EPS_CombatArmed_1HM UMETA(DisplayName = "CombatArmed_OneHandedMelee"),
 	EPS_CombatArmed_2HM UMETA(DisplayName = "CombatArmed_TwoHandedMelee"),
@@ -129,15 +130,37 @@ protected:
 
 	// States if the Character is currently aiming the Bow or not
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
-	bool bIsAimingBow;
+	bool bIsDrawingArrow;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
+	bool bIsBowAimed;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
+	bool bIsFiringArrow;
+
+	// States if the Character is turning while aiming the bow
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
+	bool bIsTurningWhileAiming;
+
+	// Target Arm Length of the CameraBoom. To be set before the camera zooms in/out.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bow")
+	float BowAim_TargetArmLength;
 
 	/** Anim Montage for Attacks*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* CombatMontage;
 
+	/** Anim Montage for Drawing an Arrow and Aiming*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* BowAimMontage;
+
 	/** Anim Montage for Sheathing, Drawing and Impacts */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* UpperBodyMontage;
+
+	/** Anim Montage for shifting legs while aiming with the bow */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* BowAimTurningMontage;
 
 	/** Particles emitted when the player gets hit */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
@@ -213,9 +236,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 	int32 IdleAnimSlot;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
+	FRotator ControlRotationForBow;
+
 private:
 
 	float CombatMaxWalkSpeed;
+
+	float BowAimingMaxWalkSpeed;
 
 	float CombatSprintingSpeed;
 
@@ -226,6 +254,8 @@ private:
 	float CrouchedCombatMaxWalkSpeed;
 
 	bool bShiftKeyDown;
+
+	float BowAim_LastYawRotation;
 
 	/** Player Movement*/
 
@@ -384,7 +414,7 @@ public:
 	void CKeyDown();
 
 	void CheckPlayerStatus();
-	
+
 	void CheckStaminaStatus(float DeltaTime);
 
 
@@ -404,7 +434,7 @@ public:
 
 	// Smoothly move the camera away from the Character.
 	UFUNCTION(BlueprintImplementableEvent)
-	void CombatModeCameraZoomOut(const FVector& FinalPosition);
+	void CombatModeCameraZoomOut();
 	// Smoothly move the camera towards the Character.
 	UFUNCTION(BlueprintImplementableEvent)
 	void NormalModeCameraZoomIn();
@@ -432,18 +462,27 @@ public:
 	// Make the camera smoothly zoom out to its original position.
 	UFUNCTION(BlueprintImplementableEvent, Category = "Bow")
 	void BowAimingCameraZoomOut();
-	
+
 	void ReloadBow();
 
+	void AbortBowAiming();
 	// Fire an arrow from the Bow.
 	void BowAttack();
 
 	// Called from an Anim Notify at the end of the Bow Firing Animation.
 	void BowAttackEnd();
 
-	// Sets bIsAimingBow to true. Called by an Anim Notify at the end of the "Drawing Arrow" animation.
+	// Sets bIsDrawingArrow to true. Called by an Anim Notify at the end of the "Drawing Arrow" animation.
 	UFUNCTION(BlueprintCallable)
-	void StartAimingBow();
+	void ArrowDrawn_StartAiming();
+
+	// Sets bIsDrawingArrow to false. Called by an Anim Notify at the end of the "Fire Arrow" animation.
+	UFUNCTION(BlueprintCallable)
+	void StopAimingBow();
+
+	// Plays the Aiming Idle Animation. Called by an Anim Notify at the end of the "Standing Turn Left/Right 90" animation.
+	UFUNCTION(BlueprintCallable)
+	void BowAimingTurnFinished();
 
 	/** Set bInterpToEnemy
 	*	@param Interp true or false depending on proximity to the Enemy
@@ -489,6 +528,10 @@ public:
 	FORCEINLINE AShield* GetEquippedShield() const { return EquippedShield; }
 
 	FORCEINLINE float GetStamina() const { return Stamina; }
+
+	FORCEINLINE bool GetIsDrawingArrow() const { return bIsDrawingArrow; }
+
+	FORCEINLINE bool GetIsBowAimed() const { return bIsBowAimed; }
 
 
 	//setters
@@ -610,5 +653,7 @@ public:
 
 	FORCEINLINE bool GetInCombatMode() const { return bInCombatMode; }
 
-	FORCEINLINE bool GetIsAttacking() const { return (bIsMeleeAttacking || bIsAimingBow); }
+	FORCEINLINE bool GetIsAttacking() const { return (bIsMeleeAttacking || bIsDrawingArrow); }
+
+	FORCEINLINE void SetIsWeaponDrawn(bool IsWeaponDrawn) { bIsWeaponDrawn = IsWeaponDrawn; }
 };

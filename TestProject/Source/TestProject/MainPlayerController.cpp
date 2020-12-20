@@ -74,7 +74,7 @@ void AMainPlayerController::Tick(float DeltaTime)
 		PositionInViewport.Y -= 90.0f;
 
 
-		FVector2D SizeInViewport(300.0f, 25.0f);
+		const FVector2D SizeInViewport(300.0f, 25.0f);
 
 		EnemyHealthBar->SetPositionInViewport(PositionInViewport);
 		EnemyHealthBar->SetDesiredSizeInViewport(SizeInViewport);

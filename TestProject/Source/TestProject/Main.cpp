@@ -38,16 +38,16 @@ AMain::AMain()
 
 	// Spring Arm (pulls towards player)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(GetRootComponent());	// Attach to root component
-	CameraBoom->TargetArmLength = 150.0f;	// Camera follows at this distance
-	CameraBoom->bUsePawnControlRotation = true;		// Rotate arm based on controller
+	CameraBoom->SetupAttachment(GetMesh(), FName("CameraBoomAttachSocket")); // Attach to root component
+	CameraBoom->TargetArmLength = 150.0f; // Camera follows at this distance
+	CameraBoom->bUsePawnControlRotation = true; // Rotate arm based on controller
 
 	// Set size of collision capsule
 	GetCapsuleComponent()->SetCapsuleSize(36.0f, 92.0f);
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);	// Attach camera to end of spring arm 
-	FollowCamera->bUsePawnControlRotation = false;	// Will stay fixed to CameraBoom and will not rotate
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach camera to end of spring arm 
+	FollowCamera->bUsePawnControlRotation = false; // Will stay fixed to CameraBoom and will not rotate
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
 	InventoryComponent->NumberOfSlots = 42;
@@ -84,8 +84,12 @@ AMain::AMain()
 	BlockingMaxWalkSpeed = 150.0f;
 	CrouchedMaxWalkSpeed = 200.0f;
 	CrouchedCombatMaxWalkSpeed = 150.0f;
+	BowAimingMaxWalkSpeed = 150.0f;
+	BowAim_TargetArmLength = 150.0f;
 
 	OverlappingWeaponLocation = FVector(0.0, 0.0, 0.0);
+
+	BowAim_LastYawRotation = 0.0f;
 
 	bShiftKeyDown = false;
 	bLMBDown = false;
@@ -96,7 +100,8 @@ AMain::AMain()
 	bEKeyDown = false;
 	bInCombatMode = false;
 	bIsMeleeAttacking = false;
-	bIsAimingBow = false;
+	bIsDrawingArrow = false;
+	bIsTurningWhileAiming = false;
 	bBlocking = false;
 	bCrouched = false;
 	bHasCombatTarget = false;
@@ -127,12 +132,12 @@ AMain::AMain()
 	HitSocketNames.Add("HeadRearHitSocket");
 
 	// Number of Idle Animations for each state
-	NumberOfIdleAnims.Add(6);	// UnarmedNormal
-	NumberOfIdleAnims.Add(6);	// UnarmedCombat
-	NumberOfIdleAnims.Add(6);	// ShieldOnly
-	NumberOfIdleAnims.Add(5);	// OneHandedMelee
-	NumberOfIdleAnims.Add(4);	// TwoHandedMelee
-	NumberOfIdleAnims.Add(4);	// Bow
+	NumberOfIdleAnims.Add(6); // UnarmedNormal
+	NumberOfIdleAnims.Add(6); // UnarmedCombat
+	NumberOfIdleAnims.Add(6); // ShieldOnly
+	NumberOfIdleAnims.Add(5); // OneHandedMelee
+	NumberOfIdleAnims.Add(4); // TwoHandedMelee
+	NumberOfIdleAnims.Add(4); // Bow
 
 	// Delegate calls IdleEnd after Timer reaches zero, when Player is in 
 	TimerDel.BindUFunction(this, FName("IdleEnd"), static_cast<int32>(PlayerStatus));
@@ -199,7 +204,7 @@ void AMain::Tick(float DeltaTime)
 	}
 
 	// If IdleTimer is not active and Player is not crouched
-	if (!GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle) && !bCrouched)
+	if (!GetWorldTimerManager().IsTimerActive(IdleAnimTimerHandle) && !bCrouched && !bIsDrawingArrow)
 	{
 		// If an Idle Animation is not already playing AND the Player is not moving
 		if (IdleAnimSlot == 0
@@ -209,6 +214,79 @@ void AMain::Tick(float DeltaTime)
 			GetWorldTimerManager().SetTimer(IdleAnimTimerHandle, TimerDel, IdleTimeLimit, false);
 		}
 	}
+
+	if (bIsDrawingArrow || bIsBowAimed)
+	{
+		/*float ControlRotationYaw = GetControlRotation().Yaw;
+
+		if(ControlRotationYaw < 0)ControlRotationYaw -= 360.0f;*/
+
+		/*float ActorRotationYaw = GetActorRotation().Yaw;
+
+		if (ActorRotationYaw < 0)ActorRotationYaw += 360.0f;
+
+		float ControlRotationYaw = GetControlRotation().Yaw - ActorRotationYaw;
+
+		if(ControlRotationYaw < -180)ControlRotationYaw += 360.0f;
+		else ControlRotationYaw += 60; */
+
+
+		/*UE_LOG(LogTemp, Warning, TEXT("%f -  %f = %f"), ControlRotationYaw, ActorRotationYaw,
+		       (ControlRotationYaw - ActorRotationYaw));*/
+
+		//// If the Character is going to rotate its Yaw beyond 90 degrees, rotate them 90 degrees to the right.
+		//if (FMath::Abs(ControlRotationYaw - ActorRotationYaw) > 90.0f)
+		//{
+		//	/*SetActorRotation(FRotator(0.0f, ControlRotationYaw, 0.0f));*/
+
+		//// Play the 'TurnRight90' Animation
+		//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		//if (AnimInstance && BowAimTurningMontage)
+		//{
+		//	bIsTurningWhileAiming = true;
+		//	
+		//	AnimInstance->Montage_Play(BowAimTurningMontage, 1.0f);
+
+		//	AnimInstance->Montage_JumpToSection(FName("TurnRight90"), BowAimTurningMontage);
+		//}
+		//}
+
+		//// else, set the Control Rotation and make sure both Pitch and Yaw fall in the range (-90deg, 90deg). 
+		//else
+		//{
+		/*ControlRotationForBow = GetControlRotation();
+
+		if(ControlRotationForBow.Pitch > 270.0f)ControlRotationForBow.Pitch -= 360.0f;
+		if(ControlRotationForBow.Yaw > 270.0f)ControlRotationForBow.Yaw -= 360.0f;*/
+		//}
+
+
+		ControlRotationForBow = GetControlRotation();
+		if (ControlRotationForBow.Pitch > 270.0f)ControlRotationForBow.Pitch -= 360.0f;
+		//if(ControlRotationForBow.Yaw > 270.0f)ControlRotationForBow.Yaw -= 360.0f;
+
+		//if(ControlRotationForBow.Yaw - BowAim_LastYawRotation > 30.0f)
+		//{
+		//	// Play the 'TurnRight90' Animation
+		//	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		//	if (AnimInstance && BowAimTurningMontage)
+		//	{
+		//		bIsTurningWhileAiming = true;
+		//		
+		//		AnimInstance->Montage_Play(BowAimTurningMontage, 2.0f);
+
+		//		AnimInstance->Montage_JumpToSection(FName("TurnRight90"), BowAimTurningMontage);
+		//	}
+		//}
+
+		//ControlRotationForBow.Yaw -= GetActorRotation().Yaw;
+	}
+	/*else
+	{
+		ControlRotationForBow = FRotator(0.0f, 0.0f, 0.0f);
+	}*/
 }
 
 //  Called to bind functionality to input
@@ -261,10 +339,10 @@ bool AMain::bCanMove(float Value)
 	if (MainPlayerController)
 	{
 		return (
-			(Value != 0.0f)		// If Value to move is 0
-			&& (!bIsMeleeAttacking)	// If Attacking
-			&& (MovementStatus != EMovementStatus::EMS_Dead)	// If not Dead
-			&& (!MainPlayerController->IsAnyMenuVisible())	// If Inventory Menu Visible
+			(Value != 0.0f) // If Value to move is 0
+			&& (!bIsMeleeAttacking) // If Attacking
+			&& (MovementStatus != EMovementStatus::EMS_Dead) // If not Dead
+			&& (!MainPlayerController->IsAnyMenuVisible()) // If Inventory Menu Visible
 		);
 	}
 	return false;
@@ -322,7 +400,7 @@ void AMain::MoveRight(float Value)
 	bMovingRight = false;
 
 	// If the Character can move AND is not sprinting(Because currently Strafing is not allowed while sprinting)
-	if (bCanMove(Value) && (MovementStatus != EMovementStatus::EMS_Sprinting))
+	if (bCanMove(Value) && !CanCheckStaminaStatus())
 	{
 		ResetIdleTimer();
 
@@ -377,13 +455,13 @@ void AMain::LMBUp()
 {
 	bLMBDown = false;
 
-	if(bIsAimingBow)
+	if (bIsDrawingArrow)
+	{
+		AbortBowAiming();
+	}
+	else if (bIsBowAimed)
 	{
 		BowAttack();
-
-		BowAimingCameraZoomOut();
-
-		bIsAimingBow = false;
 	}
 }
 
@@ -441,6 +519,8 @@ void AMain::LMBDown()
 	/** if Player already has a weapon equipped AND
 	*	is not already blocking, perform an Attack.
 	*/
+
+	// todo make all of these checks into one function
 	if (!bBlocking)
 	{
 		UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
@@ -451,12 +531,19 @@ void AMain::LMBDown()
 			{
 				if (bInCombatMode)
 				{
-					// If the Weapon is a Bow
-					if (EquippedWeapon && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Bow)
+					if (EquippedWeapon && bIsWeaponDrawn)
 					{
-						ReloadBow();
+						// If the Weapon is a Bow
+						if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Bow)
+						{
+							ReloadBow();
+						}
+							// Else if the Weapon is a Melee Weapon
+						else
+						{
+							MeleeAttack();
+						}
 					}
-					// Else if the Weapon is a Melee Weapon
 					else
 					{
 						MeleeAttack();
@@ -716,7 +803,8 @@ void AMain::CheckStaminaStatus(float DeltaTime)
 	case EStaminaStatus::ESS_Normal:
 
 		if (CanCheckStaminaStatus())
-		{	// or blocking
+		{
+			// or blocking
 
 			if (Stamina - DeltaStamina <= MinSprintStamina)
 			{
@@ -823,19 +911,24 @@ void AMain::CheckStaminaStatus(float DeltaTime)
 }
 
 
-
 void AMain::LeaveCombatMode()
 {
+	// If currently aiming, stop the Aiming Montage.
+	if (bIsDrawingArrow || bIsBowAimed)
+	{
+		AbortBowAiming();
+	}
+
 	NormalModeCameraZoomIn();
 
+
 	bInCombatMode = false;
+
 	SetIsAttacking(false);
 
 	// If a weapon is equipped, sheathe it.
-	if (bIsWeaponDrawn && EquippedWeapon)
+	if (EquippedWeapon)
 	{
-		bIsWeaponDrawn = false;
-
 		// Play the Sheath sound
 		EquippedWeapon->PlaySheathSound();
 
@@ -853,24 +946,13 @@ void AMain::LeaveCombatMode()
 
 void AMain::EnterCombatMode()
 {
-	if(EquippedWeapon && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Bow)
-	{
-		CombatModeCameraZoomOut(FVector(150.0f, 0.0f, 80.0f));
-	}
-	else
-	{
-		CombatModeCameraZoomOut(FVector(300.0f, 0.0f, 100.0f));
-	}
-	
-	
+	CombatModeCameraZoomOut();
 
 	bInCombatMode = true;
 
 	// If a weapon is equipped, draw it.
-	if (!bIsWeaponDrawn && EquippedWeapon)
+	if (EquippedWeapon)
 	{
-		bIsWeaponDrawn = true;
-
 		// Play the Draw sound
 		EquippedWeapon->PlayDrawSound();
 
@@ -888,22 +970,58 @@ void AMain::EnterCombatMode()
 
 void AMain::ReloadBow()
 {
+	bIsDrawingArrow = true;
+	bUseControllerRotationYaw = true;
+
+	// Zoom in
+	BowAim_TargetArmLength = 100.0f;
 	BowAimingCameraZoomIn();
-						
+
+	// Set BowAim_LastYawRotation to the current Yaw rotation
+	BowAim_LastYawRotation = GetControlRotation().Yaw;
+
+	// Play the Arrow Drawing Animation
 	UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
 
 	if (MainAnimInstance)
 	{
-		MainAnimInstance->Montage_Play(UpperBodyMontage, 1.0f);
+		MainAnimInstance->Montage_Play(BowAimMontage, 1.0f);
 
-		MainAnimInstance->Montage_JumpToSection(FName("DrawArrow"), UpperBodyMontage);
+		// MainAnimInstance->Montage_JumpToSection(FName("DrawArrow"), UpperBodyMontage);
 	}
+}
+
+
+void AMain::AbortBowAiming()
+{
+	UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
+
+	// Stop playing the Arrow Drawing Animation
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->Montage_Stop(0.25f, BowAimMontage);
+
+		// MainAnimInstance->Montage_JumpToSection(FName("DrawArrow"), UpperBodyMontage);
+	}
+
+	// Zoom out
+	if (bInCombatMode)
+	{
+		BowAim_TargetArmLength = 400.0f;
+		BowAimingCameraZoomOut();
+	}
+
+	bIsDrawingArrow = false;
+	bIsBowAimed = false;
 }
 
 void AMain::BowAttack()
 {
+	bIsFiringArrow = true;
+
 	UE_LOG(LogTemp, Warning, TEXT("BowAttack() has been called!"));
 
+	// Play the Arrow Firing Animation
 	UMainAnimInstance* MainAnimInstance = Cast<UMainAnimInstance>(GetMesh()->GetAnimInstance());
 
 	if (MainAnimInstance)
@@ -912,26 +1030,43 @@ void AMain::BowAttack()
 
 		MainAnimInstance->Montage_JumpToSection(FName("FireArrow"), UpperBodyMontage);
 	}
+
+	// Zoom out
+	BowAim_TargetArmLength = 400.0f;
+	BowAimingCameraZoomOut();
+
+	// bUseControllerRotationPitch = false;
 }
 
 void AMain::BowAttackEnd()
 {
-	// If the Player is still holding the LMB down, attack again.
-	if(bLMBDown)
-	{
-		BowAttack();
-	}
-	else
-	{
-		BowAimingCameraZoomOut();
-		bIsAimingBow = false;
-	}
-	
 }
 
-void AMain::StartAimingBow()
+void AMain::ArrowDrawn_StartAiming()
 {
-	bIsAimingBow = true;
+	bIsDrawingArrow = false;
+	bIsBowAimed = true;
+}
+
+void AMain::StopAimingBow()
+{
+	bIsBowAimed = false;
+	bIsFiringArrow = false;
+}
+
+void AMain::BowAimingTurnFinished()
+{
+	//// Play the 'TurnRight90' Animation
+	//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	//if (AnimInstance && BowAimMontage)
+	//{
+	//	AnimInstance->Montage_Play(BowAimMontage, 1.0f);
+
+	//	AnimInstance->Montage_JumpToSection(FName("Loop"), BowAimMontage);
+	//}
+
+	bIsTurningWhileAiming = false;
 }
 
 
@@ -996,7 +1131,8 @@ void AMain::PlayMeleeAttack(int32 Section)
 				if (Section == 3)Section += FMath::RandRange(0, NumberOfMeleeComboAttacks - 1);
 			}
 			else
-			{	// Only one Section for crouched attacks
+			{
+				// Only one Section for crouched attacks
 				Section = 1;
 				AttackName.Append("Crouched_");
 			}
@@ -1010,7 +1146,7 @@ void AMain::PlayMeleeAttack(int32 Section)
 			{
 				// Override Section  todo Find a better way to find the even AttackSection
 				Section = FMath::RandRange(2, 4);
-				if (Section % 2)Section -= 1;	// Set Section to play the 2nd Animation if RandRange returns 3.
+				if (Section % 2)Section -= 1; // Set Section to play the 2nd Animation if RandRange returns 3.
 			}
 
 			AttackName.Append("UnarmedMeleeAttack_");
@@ -1040,7 +1176,7 @@ void AMain::MeleeAttackEnd()
 	GetWorldTimerManager().SetTimer(AttackTimerHandle, this, &AMain::ResetMeleeAttackComboSection,
 	                                AttackComboSectionResetTime);
 
-	
+
 	if (bLMBDown)
 	{
 		GetWorldTimerManager().ClearTimer(AttackTimerHandle);
@@ -1149,8 +1285,10 @@ void AMain::PlayBlockImpactAnimation(int32 Section)
 
 void AMain::SetIsAttacking(bool Attacking)
 {
-	if(bIsMeleeAttacking != Attacking)bIsMeleeAttacking = Attacking;
-	else if(bIsAimingBow != Attacking)bIsAimingBow = Attacking;
+	/*if (bIsMeleeAttacking != Attacking)bIsMeleeAttacking = Attacking;
+	else if (bIsDrawingArrow != Attacking)bIsDrawingArrow = Attacking;*/
+
+	bIsMeleeAttacking = bIsDrawingArrow = bIsBowAimed = false;
 }
 
 void AMain::Die()
@@ -1196,15 +1334,15 @@ void AMain::SetMovementStatus(EMovementStatus Status)
 		if (bInCombatMode)GetCharacterMovement()->MaxWalkSpeed = CombatSprintingSpeed;
 		else GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
 	}
-	else if (bBlocking)
-	{
-		GetCharacterMovement()->MaxWalkSpeed = BlockingMaxWalkSpeed;
-	}
 	else if (bInCombatMode)
 	{
-		if (GetCharacterMovement()->IsCrouching())
-			GetCharacterMovement()->MaxWalkSpeedCrouched =
-				CrouchedCombatMaxWalkSpeed;
+		if (GetCharacterMovement()->IsCrouching())GetCharacterMovement()->MaxWalkSpeedCrouched =
+			CrouchedCombatMaxWalkSpeed;
+		else if (EquippedWeapon && bIsDrawingArrow)GetCharacterMovement()->MaxWalkSpeed = BowAimingMaxWalkSpeed;
+		else if (bBlocking)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = BlockingMaxWalkSpeed;
+		}
 		else GetCharacterMovement()->MaxWalkSpeed = CombatMaxWalkSpeed;
 	}
 
@@ -1240,14 +1378,20 @@ void AMain::ShiftKeyDown()
 {
 	bShiftKeyDown = true;
 
-	SprintStartCameraZoomOut();
+	if (CanCheckStaminaStatus())
+	{
+		SprintStartCameraZoomOut();
+	}
 }
 
 void AMain::ShiftKeyUp()
 {
-	bShiftKeyDown = false;
+	if (CanCheckStaminaStatus())
+	{
+		SprintEndCameraZoomIn();
+	}
 
-	SprintEndCameraZoomIn();
+	bShiftKeyDown = false;
 }
 
 void AMain::PlaySwingSound()
@@ -1306,7 +1450,7 @@ void AMain::Jump()
 		if (MainPlayerController->IsPauseMenuVisible())return;
 	}
 
-	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking) && (!bIsMeleeAttacking))
+	if ((MovementStatus != EMovementStatus::EMS_Dead) && (!bBlocking) && (!bIsMeleeAttacking) && (!bIsDrawingArrow))
 	{
 		ResetIdleTimer();
 
@@ -1627,11 +1771,11 @@ bool AMain::CanCheckStaminaStatus()
 
 	if (MainAnimInstance)
 	{
-		return ((!GetMovementComponent()->IsFalling()
-				&& !bBlocking
-				&& !GetCharacterMovement()->IsCrouching())
-			&& (bShiftKeyDown
-				&& (bMovingForward && MainAnimInstance->GetSpeedForward() > 0.0f)));
+		return (!GetMovementComponent()->IsFalling()
+			&& !bBlocking
+			&& !GetCharacterMovement()->IsCrouching()
+			&& (bShiftKeyDown && bMovingForward && MainAnimInstance->GetSpeedForward() != 0.0f)
+			&& !bIsDrawingArrow && !bIsBowAimed);
 	}
 	return false;
 }
@@ -1650,7 +1794,8 @@ void AMain::IdleEnd(int32 PlayerStatusNo)
 
 	// If Character was in Original Idle state, play an Idle Animation.
 	if (IdleAnimSlot == 0)
-	{                               // [0 -> NumberOfIdleAnims - 1]
+	{
+		// [0 -> NumberOfIdleAnims - 1]
 		IdleAnimSlot = FMath::RandRange(1, NumberOfIdleAnims[PlayerStatusNo] - 1);
 	}
 
